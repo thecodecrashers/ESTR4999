@@ -1,0 +1,602 @@
+[
+    {
+        "initial_state_index": 0,
+        "baseline_reward": -2669.7956783420873,
+        "modified_reward": -2832.961913734032,
+        "WIQL_reward": -3300.365354241504
+    },
+    {
+        "initial_state_index": 1,
+        "baseline_reward": -2806.2916827782797,
+        "modified_reward": -2913.1025259886796,
+        "WIQL_reward": -3321.0019523778365
+    },
+    {
+        "initial_state_index": 2,
+        "baseline_reward": -2597.8011809115305,
+        "modified_reward": -2882.4629757958883,
+        "WIQL_reward": -3317.149701360971
+    },
+    {
+        "initial_state_index": 3,
+        "baseline_reward": -2498.8168339565705,
+        "modified_reward": -2783.0474436432623,
+        "WIQL_reward": -3289.439864952875
+    },
+    {
+        "initial_state_index": 4,
+        "baseline_reward": -2633.122736302067,
+        "modified_reward": -2761.9522690639706,
+        "WIQL_reward": -3203.152781576242
+    },
+    {
+        "initial_state_index": 5,
+        "baseline_reward": -2615.931284433399,
+        "modified_reward": -2656.002324520984,
+        "WIQL_reward": -3282.647840254863
+    },
+    {
+        "initial_state_index": 6,
+        "baseline_reward": -2668.9918973914914,
+        "modified_reward": -2875.9016571874804,
+        "WIQL_reward": -3286.396010831361
+    },
+    {
+        "initial_state_index": 7,
+        "baseline_reward": -2616.083525375509,
+        "modified_reward": -2814.026553187684,
+        "WIQL_reward": -3214.099941416332
+    },
+    {
+        "initial_state_index": 8,
+        "baseline_reward": -2602.151928276743,
+        "modified_reward": -2830.025769177285,
+        "WIQL_reward": -3357.812368412126
+    },
+    {
+        "initial_state_index": 9,
+        "baseline_reward": -2664.9177099152776,
+        "modified_reward": -2855.215781244991,
+        "WIQL_reward": -3348.203068864782
+    },
+    {
+        "initial_state_index": 10,
+        "baseline_reward": -2630.738015027213,
+        "modified_reward": -2706.313040113253,
+        "WIQL_reward": -3282.887981468498
+    },
+    {
+        "initial_state_index": 11,
+        "baseline_reward": -2543.738216439821,
+        "modified_reward": -2815.144666130039,
+        "WIQL_reward": -3323.407608204617
+    },
+    {
+        "initial_state_index": 12,
+        "baseline_reward": -2786.7975746561233,
+        "modified_reward": -2932.044552071353,
+        "WIQL_reward": -3420.047446441776
+    },
+    {
+        "initial_state_index": 13,
+        "baseline_reward": -2674.469983879752,
+        "modified_reward": -2728.784835420603,
+        "WIQL_reward": -3268.0252796204322
+    },
+    {
+        "initial_state_index": 14,
+        "baseline_reward": -2752.163379495781,
+        "modified_reward": -2769.621425364724,
+        "WIQL_reward": -3295.8639409472207
+    },
+    {
+        "initial_state_index": 15,
+        "baseline_reward": -2658.576440543106,
+        "modified_reward": -2889.9435825763835,
+        "WIQL_reward": -3396.71777122241
+    },
+    {
+        "initial_state_index": 16,
+        "baseline_reward": -2840.9374847271,
+        "modified_reward": -2911.9903431853395,
+        "WIQL_reward": -3347.332754541425
+    },
+    {
+        "initial_state_index": 17,
+        "baseline_reward": -2673.727449865096,
+        "modified_reward": -2827.871363088234,
+        "WIQL_reward": -3334.1571285431646
+    },
+    {
+        "initial_state_index": 18,
+        "baseline_reward": -2704.2518143324114,
+        "modified_reward": -2759.697866136091,
+        "WIQL_reward": -3294.068066160685
+    },
+    {
+        "initial_state_index": 19,
+        "baseline_reward": -2743.160978069584,
+        "modified_reward": -2811.5000241004973,
+        "WIQL_reward": -3309.254006681423
+    },
+    {
+        "initial_state_index": 20,
+        "baseline_reward": -2609.1052000123864,
+        "modified_reward": -2783.491714735609,
+        "WIQL_reward": -3271.0946077183517
+    },
+    {
+        "initial_state_index": 21,
+        "baseline_reward": -2540.6208153448993,
+        "modified_reward": -2783.331745190276,
+        "WIQL_reward": -3242.0376366311707
+    },
+    {
+        "initial_state_index": 22,
+        "baseline_reward": -2654.7002042310114,
+        "modified_reward": -2873.80677209423,
+        "WIQL_reward": -3282.7209256280066
+    },
+    {
+        "initial_state_index": 23,
+        "baseline_reward": -2706.010681396327,
+        "modified_reward": -2787.5635775758783,
+        "WIQL_reward": -3317.4554335702633
+    },
+    {
+        "initial_state_index": 24,
+        "baseline_reward": -2627.9391124082463,
+        "modified_reward": -2908.757208451493,
+        "WIQL_reward": -3369.087293674368
+    },
+    {
+        "initial_state_index": 25,
+        "baseline_reward": -2643.848987522227,
+        "modified_reward": -2799.7542484089327,
+        "WIQL_reward": -3310.3214155240557
+    },
+    {
+        "initial_state_index": 26,
+        "baseline_reward": -2599.7135540306726,
+        "modified_reward": -2848.560592875942,
+        "WIQL_reward": -3319.1293110345578
+    },
+    {
+        "initial_state_index": 27,
+        "baseline_reward": -2626.0035232973737,
+        "modified_reward": -2730.4117093709306,
+        "WIQL_reward": -3256.6835041409076
+    },
+    {
+        "initial_state_index": 28,
+        "baseline_reward": -2662.3281097898866,
+        "modified_reward": -2766.8299467295997,
+        "WIQL_reward": -3313.6459125779447
+    },
+    {
+        "initial_state_index": 29,
+        "baseline_reward": -2727.0377483488382,
+        "modified_reward": -2906.6815935292643,
+        "WIQL_reward": -3370.7187804474806
+    },
+    {
+        "initial_state_index": 30,
+        "baseline_reward": -2614.835333768159,
+        "modified_reward": -2719.0793610331352,
+        "WIQL_reward": -3274.9351693699255
+    },
+    {
+        "initial_state_index": 31,
+        "baseline_reward": -2644.3571501500974,
+        "modified_reward": -2803.105176142639,
+        "WIQL_reward": -3281.272658882175
+    },
+    {
+        "initial_state_index": 32,
+        "baseline_reward": -2689.090009820807,
+        "modified_reward": -2769.932858668794,
+        "WIQL_reward": -3337.501467142819
+    },
+    {
+        "initial_state_index": 33,
+        "baseline_reward": -2610.531066141574,
+        "modified_reward": -2720.6837541470395,
+        "WIQL_reward": -3290.8048941177535
+    },
+    {
+        "initial_state_index": 34,
+        "baseline_reward": -2589.5819213265972,
+        "modified_reward": -2757.813705586524,
+        "WIQL_reward": -3246.3103588976724
+    },
+    {
+        "initial_state_index": 35,
+        "baseline_reward": -2659.031469007895,
+        "modified_reward": -2839.4002606956824,
+        "WIQL_reward": -3251.352542842699
+    },
+    {
+        "initial_state_index": 36,
+        "baseline_reward": -2728.2072972220944,
+        "modified_reward": -2869.354362954097,
+        "WIQL_reward": -3381.524945559867
+    },
+    {
+        "initial_state_index": 37,
+        "baseline_reward": -2582.9998195727176,
+        "modified_reward": -2820.565454777905,
+        "WIQL_reward": -3295.8306713558063
+    },
+    {
+        "initial_state_index": 38,
+        "baseline_reward": -2612.393983824427,
+        "modified_reward": -2741.692541520935,
+        "WIQL_reward": -3265.837832927059
+    },
+    {
+        "initial_state_index": 39,
+        "baseline_reward": -2731.4418179283816,
+        "modified_reward": -2774.133450485514,
+        "WIQL_reward": -3351.5622061110907
+    },
+    {
+        "initial_state_index": 40,
+        "baseline_reward": -2716.2347860199616,
+        "modified_reward": -2936.30751778511,
+        "WIQL_reward": -3302.7474001648943
+    },
+    {
+        "initial_state_index": 41,
+        "baseline_reward": -2624.8842996443427,
+        "modified_reward": -2747.4757861713924,
+        "WIQL_reward": -3300.4537323273316
+    },
+    {
+        "initial_state_index": 42,
+        "baseline_reward": -2668.005958482404,
+        "modified_reward": -2750.5248258833353,
+        "WIQL_reward": -3258.3717899697667
+    },
+    {
+        "initial_state_index": 43,
+        "baseline_reward": -2540.510233451222,
+        "modified_reward": -2751.80343632624,
+        "WIQL_reward": -3203.1436642308254
+    },
+    {
+        "initial_state_index": 44,
+        "baseline_reward": -2557.16482699746,
+        "modified_reward": -2748.4273408429813,
+        "WIQL_reward": -3215.724800682249
+    },
+    {
+        "initial_state_index": 45,
+        "baseline_reward": -2608.546110344513,
+        "modified_reward": -2683.7147318534207,
+        "WIQL_reward": -3254.158761812151
+    },
+    {
+        "initial_state_index": 46,
+        "baseline_reward": -2624.243974306294,
+        "modified_reward": -2799.2518434576173,
+        "WIQL_reward": -3258.503574011033
+    },
+    {
+        "initial_state_index": 47,
+        "baseline_reward": -2617.9785255072334,
+        "modified_reward": -2787.0770860507337,
+        "WIQL_reward": -3320.4269816641963
+    },
+    {
+        "initial_state_index": 48,
+        "baseline_reward": -2692.593550475278,
+        "modified_reward": -2799.6802671536784,
+        "WIQL_reward": -3257.0827078034354
+    },
+    {
+        "initial_state_index": 49,
+        "baseline_reward": -2747.167473362812,
+        "modified_reward": -2885.45601084236,
+        "WIQL_reward": -3352.262645669077
+    },
+    {
+        "initial_state_index": 50,
+        "baseline_reward": -2580.1206107597586,
+        "modified_reward": -2613.737958866884,
+        "WIQL_reward": -3197.1633447563986
+    },
+    {
+        "initial_state_index": 51,
+        "baseline_reward": -2611.127282859995,
+        "modified_reward": -2686.154770290475,
+        "WIQL_reward": -3311.612853654533
+    },
+    {
+        "initial_state_index": 52,
+        "baseline_reward": -2646.660522037484,
+        "modified_reward": -2759.2151009222466,
+        "WIQL_reward": -3285.68350593266
+    },
+    {
+        "initial_state_index": 53,
+        "baseline_reward": -2614.5208520504943,
+        "modified_reward": -2720.998695238466,
+        "WIQL_reward": -3269.8013562759575
+    },
+    {
+        "initial_state_index": 54,
+        "baseline_reward": -2640.4639417622825,
+        "modified_reward": -2803.24506077244,
+        "WIQL_reward": -3259.7649339616783
+    },
+    {
+        "initial_state_index": 55,
+        "baseline_reward": -2702.716851536833,
+        "modified_reward": -2875.699438695347,
+        "WIQL_reward": -3248.4755547750738
+    },
+    {
+        "initial_state_index": 56,
+        "baseline_reward": -2655.468512045101,
+        "modified_reward": -2765.039965004137,
+        "WIQL_reward": -3203.964204625438
+    },
+    {
+        "initial_state_index": 57,
+        "baseline_reward": -2675.4065791904636,
+        "modified_reward": -2865.890994916809,
+        "WIQL_reward": -3281.961518515872
+    },
+    {
+        "initial_state_index": 58,
+        "baseline_reward": -2553.059887861619,
+        "modified_reward": -2717.8534714962843,
+        "WIQL_reward": -3319.9222150762157
+    },
+    {
+        "initial_state_index": 59,
+        "baseline_reward": -2559.9976311810237,
+        "modified_reward": -2740.7840305071973,
+        "WIQL_reward": -3184.0514890161176
+    },
+    {
+        "initial_state_index": 60,
+        "baseline_reward": -2569.9206081553893,
+        "modified_reward": -2753.291824865849,
+        "WIQL_reward": -3238.0894483977054
+    },
+    {
+        "initial_state_index": 61,
+        "baseline_reward": -2622.3333944124197,
+        "modified_reward": -2760.978951964431,
+        "WIQL_reward": -3203.524802149876
+    },
+    {
+        "initial_state_index": 62,
+        "baseline_reward": -2497.6190918711045,
+        "modified_reward": -2724.3323541478057,
+        "WIQL_reward": -3135.706054651676
+    },
+    {
+        "initial_state_index": 63,
+        "baseline_reward": -2692.0947251389744,
+        "modified_reward": -2768.8243834823875,
+        "WIQL_reward": -3312.5787966798803
+    },
+    {
+        "initial_state_index": 64,
+        "baseline_reward": -2552.27679502862,
+        "modified_reward": -2766.44891639539,
+        "WIQL_reward": -3217.383371554513
+    },
+    {
+        "initial_state_index": 65,
+        "baseline_reward": -2663.6559395223485,
+        "modified_reward": -2855.9622217550473,
+        "WIQL_reward": -3305.8576343212253
+    },
+    {
+        "initial_state_index": 66,
+        "baseline_reward": -2718.988979677151,
+        "modified_reward": -2795.522099554436,
+        "WIQL_reward": -3223.981861741847
+    },
+    {
+        "initial_state_index": 67,
+        "baseline_reward": -2670.214190211411,
+        "modified_reward": -2734.3994454077065,
+        "WIQL_reward": -3194.8522883785345
+    },
+    {
+        "initial_state_index": 68,
+        "baseline_reward": -2628.815980569566,
+        "modified_reward": -2731.445106072112,
+        "WIQL_reward": -3329.536783151017
+    },
+    {
+        "initial_state_index": 69,
+        "baseline_reward": -2682.996462141569,
+        "modified_reward": -2878.2269676684323,
+        "WIQL_reward": -3363.8614793397755
+    },
+    {
+        "initial_state_index": 70,
+        "baseline_reward": -2657.541197940164,
+        "modified_reward": -2974.8250068154002,
+        "WIQL_reward": -3373.8468464972493
+    },
+    {
+        "initial_state_index": 71,
+        "baseline_reward": -2587.9645723693216,
+        "modified_reward": -2818.18343209431,
+        "WIQL_reward": -3296.21400177709
+    },
+    {
+        "initial_state_index": 72,
+        "baseline_reward": -2622.9565808054112,
+        "modified_reward": -2860.9890313867995,
+        "WIQL_reward": -3350.1068050192175
+    },
+    {
+        "initial_state_index": 73,
+        "baseline_reward": -2636.4460002061123,
+        "modified_reward": -2942.796088717022,
+        "WIQL_reward": -3361.5274601445803
+    },
+    {
+        "initial_state_index": 74,
+        "baseline_reward": -2657.2783188460535,
+        "modified_reward": -2786.433785229949,
+        "WIQL_reward": -3327.2884931650647
+    },
+    {
+        "initial_state_index": 75,
+        "baseline_reward": -2625.0746616264755,
+        "modified_reward": -2720.6601650540297,
+        "WIQL_reward": -3294.0244015047806
+    },
+    {
+        "initial_state_index": 76,
+        "baseline_reward": -2698.832363687902,
+        "modified_reward": -2855.1808145188306,
+        "WIQL_reward": -3375.5706215275413
+    },
+    {
+        "initial_state_index": 77,
+        "baseline_reward": -2751.094009814886,
+        "modified_reward": -2881.934673337958,
+        "WIQL_reward": -3311.1891547591295
+    },
+    {
+        "initial_state_index": 78,
+        "baseline_reward": -2649.9470451214975,
+        "modified_reward": -2794.61091451015,
+        "WIQL_reward": -3239.8895465707697
+    },
+    {
+        "initial_state_index": 79,
+        "baseline_reward": -2581.427345116218,
+        "modified_reward": -2840.320069855604,
+        "WIQL_reward": -3344.819733170187
+    },
+    {
+        "initial_state_index": 80,
+        "baseline_reward": -2605.4836272645975,
+        "modified_reward": -2829.4136928268476,
+        "WIQL_reward": -3266.3224921562546
+    },
+    {
+        "initial_state_index": 81,
+        "baseline_reward": -2643.0654304261707,
+        "modified_reward": -2766.2098528788893,
+        "WIQL_reward": -3307.1757767694335
+    },
+    {
+        "initial_state_index": 82,
+        "baseline_reward": -2537.8588298243635,
+        "modified_reward": -2663.4443298221363,
+        "WIQL_reward": -3233.9006027634414
+    },
+    {
+        "initial_state_index": 83,
+        "baseline_reward": -2645.290080999738,
+        "modified_reward": -2838.693104643108,
+        "WIQL_reward": -3263.18128137335
+    },
+    {
+        "initial_state_index": 84,
+        "baseline_reward": -2662.6519852995543,
+        "modified_reward": -2808.7973879121437,
+        "WIQL_reward": -3312.0037687752156
+    },
+    {
+        "initial_state_index": 85,
+        "baseline_reward": -2682.89965917507,
+        "modified_reward": -2763.7984908134595,
+        "WIQL_reward": -3387.8961574109067
+    },
+    {
+        "initial_state_index": 86,
+        "baseline_reward": -2561.654485963246,
+        "modified_reward": -2763.7305003823312,
+        "WIQL_reward": -3266.84475518869
+    },
+    {
+        "initial_state_index": 87,
+        "baseline_reward": -2539.944456170585,
+        "modified_reward": -2845.9655877331725,
+        "WIQL_reward": -3242.165512079423
+    },
+    {
+        "initial_state_index": 88,
+        "baseline_reward": -2663.8957239396887,
+        "modified_reward": -2820.260316892344,
+        "WIQL_reward": -3329.3097685695625
+    },
+    {
+        "initial_state_index": 89,
+        "baseline_reward": -2627.249691068467,
+        "modified_reward": -2775.78285059511,
+        "WIQL_reward": -3338.592411240049
+    },
+    {
+        "initial_state_index": 90,
+        "baseline_reward": -2690.846217054942,
+        "modified_reward": -2788.5886842303175,
+        "WIQL_reward": -3320.398677836057
+    },
+    {
+        "initial_state_index": 91,
+        "baseline_reward": -2667.854475873124,
+        "modified_reward": -2787.98984790426,
+        "WIQL_reward": -3291.7762590274956
+    },
+    {
+        "initial_state_index": 92,
+        "baseline_reward": -2522.0880711481286,
+        "modified_reward": -2723.433177540987,
+        "WIQL_reward": -3242.1214900222158
+    },
+    {
+        "initial_state_index": 93,
+        "baseline_reward": -2571.930861563872,
+        "modified_reward": -2797.851377654281,
+        "WIQL_reward": -3185.25648118708
+    },
+    {
+        "initial_state_index": 94,
+        "baseline_reward": -2638.715537555179,
+        "modified_reward": -2766.5543876434785,
+        "WIQL_reward": -3246.7412793420926
+    },
+    {
+        "initial_state_index": 95,
+        "baseline_reward": -2634.099360561755,
+        "modified_reward": -2883.2365228414906,
+        "WIQL_reward": -3272.6345082989064
+    },
+    {
+        "initial_state_index": 96,
+        "baseline_reward": -2593.964927582968,
+        "modified_reward": -2713.645515301024,
+        "WIQL_reward": -3254.2448176523985
+    },
+    {
+        "initial_state_index": 97,
+        "baseline_reward": -2640.9363565171116,
+        "modified_reward": -2669.1166949611625,
+        "WIQL_reward": -3249.5051031030666
+    },
+    {
+        "initial_state_index": 98,
+        "baseline_reward": -2640.9546416526473,
+        "modified_reward": -2856.7982049301713,
+        "WIQL_reward": -3319.6019476324045
+    },
+    {
+        "initial_state_index": 99,
+        "baseline_reward": -2656.600075821755,
+        "modified_reward": -2851.5944029447473,
+        "WIQL_reward": -3284.5397484217574
+    }
+]

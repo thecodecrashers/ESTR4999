@@ -1,0 +1,602 @@
+[
+    {
+        "initial_state_index": 0,
+        "baseline_reward": -3078.0,
+        "modified_reward": -3346.5,
+        "WIQL_reward": -3918.9
+    },
+    {
+        "initial_state_index": 1,
+        "baseline_reward": -3048.9,
+        "modified_reward": -3424.2,
+        "WIQL_reward": -3959.1
+    },
+    {
+        "initial_state_index": 2,
+        "baseline_reward": -3052.8,
+        "modified_reward": -3324.4,
+        "WIQL_reward": -3993.2
+    },
+    {
+        "initial_state_index": 3,
+        "baseline_reward": -2946.0,
+        "modified_reward": -3127.6,
+        "WIQL_reward": -3927.5
+    },
+    {
+        "initial_state_index": 4,
+        "baseline_reward": -3088.4,
+        "modified_reward": -3141.3,
+        "WIQL_reward": -3751.9
+    },
+    {
+        "initial_state_index": 5,
+        "baseline_reward": -3063.9,
+        "modified_reward": -3307.1,
+        "WIQL_reward": -3847.9
+    },
+    {
+        "initial_state_index": 6,
+        "baseline_reward": -3065.9,
+        "modified_reward": -3239.8,
+        "WIQL_reward": -3946.5
+    },
+    {
+        "initial_state_index": 7,
+        "baseline_reward": -3101.7,
+        "modified_reward": -3410.2,
+        "WIQL_reward": -3873.0
+    },
+    {
+        "initial_state_index": 8,
+        "baseline_reward": -2980.8,
+        "modified_reward": -3260.5,
+        "WIQL_reward": -3967.6
+    },
+    {
+        "initial_state_index": 9,
+        "baseline_reward": -3096.8,
+        "modified_reward": -3354.6,
+        "WIQL_reward": -3925.8
+    },
+    {
+        "initial_state_index": 10,
+        "baseline_reward": -2990.6,
+        "modified_reward": -3315.2,
+        "WIQL_reward": -3872.2
+    },
+    {
+        "initial_state_index": 11,
+        "baseline_reward": -3040.7,
+        "modified_reward": -3261.2,
+        "WIQL_reward": -3906.3
+    },
+    {
+        "initial_state_index": 12,
+        "baseline_reward": -3168.2,
+        "modified_reward": -3420.6,
+        "WIQL_reward": -3965.7
+    },
+    {
+        "initial_state_index": 13,
+        "baseline_reward": -3004.7,
+        "modified_reward": -3363.0,
+        "WIQL_reward": -3951.5
+    },
+    {
+        "initial_state_index": 14,
+        "baseline_reward": -3066.2,
+        "modified_reward": -3118.9,
+        "WIQL_reward": -3969.6
+    },
+    {
+        "initial_state_index": 15,
+        "baseline_reward": -3108.5,
+        "modified_reward": -3370.7,
+        "WIQL_reward": -3928.9
+    },
+    {
+        "initial_state_index": 16,
+        "baseline_reward": -3028.8,
+        "modified_reward": -3408.4,
+        "WIQL_reward": -4005.9
+    },
+    {
+        "initial_state_index": 17,
+        "baseline_reward": -3113.7,
+        "modified_reward": -3267.7,
+        "WIQL_reward": -3916.1
+    },
+    {
+        "initial_state_index": 18,
+        "baseline_reward": -3008.6,
+        "modified_reward": -3341.5,
+        "WIQL_reward": -3947.3
+    },
+    {
+        "initial_state_index": 19,
+        "baseline_reward": -3116.8,
+        "modified_reward": -3338.2,
+        "WIQL_reward": -3894.6
+    },
+    {
+        "initial_state_index": 20,
+        "baseline_reward": -3037.9,
+        "modified_reward": -3122.0,
+        "WIQL_reward": -3922.8
+    },
+    {
+        "initial_state_index": 21,
+        "baseline_reward": -2980.5,
+        "modified_reward": -3239.7,
+        "WIQL_reward": -3952.5
+    },
+    {
+        "initial_state_index": 22,
+        "baseline_reward": -3217.2,
+        "modified_reward": -3384.5,
+        "WIQL_reward": -4006.0
+    },
+    {
+        "initial_state_index": 23,
+        "baseline_reward": -3052.5,
+        "modified_reward": -3403.1,
+        "WIQL_reward": -3976.7
+    },
+    {
+        "initial_state_index": 24,
+        "baseline_reward": -3134.2,
+        "modified_reward": -3426.4,
+        "WIQL_reward": -3949.3
+    },
+    {
+        "initial_state_index": 25,
+        "baseline_reward": -3092.0,
+        "modified_reward": -3279.8,
+        "WIQL_reward": -3943.3
+    },
+    {
+        "initial_state_index": 26,
+        "baseline_reward": -2985.8,
+        "modified_reward": -3239.4,
+        "WIQL_reward": -3911.7
+    },
+    {
+        "initial_state_index": 27,
+        "baseline_reward": -2969.6,
+        "modified_reward": -3295.8,
+        "WIQL_reward": -3849.7
+    },
+    {
+        "initial_state_index": 28,
+        "baseline_reward": -3128.3,
+        "modified_reward": -3150.8,
+        "WIQL_reward": -3918.9
+    },
+    {
+        "initial_state_index": 29,
+        "baseline_reward": -3068.0,
+        "modified_reward": -3446.7,
+        "WIQL_reward": -3930.3
+    },
+    {
+        "initial_state_index": 30,
+        "baseline_reward": -3079.2,
+        "modified_reward": -3178.2,
+        "WIQL_reward": -3898.8
+    },
+    {
+        "initial_state_index": 31,
+        "baseline_reward": -3041.9,
+        "modified_reward": -3337.0,
+        "WIQL_reward": -3863.2
+    },
+    {
+        "initial_state_index": 32,
+        "baseline_reward": -3053.9,
+        "modified_reward": -3336.2,
+        "WIQL_reward": -3927.7
+    },
+    {
+        "initial_state_index": 33,
+        "baseline_reward": -3015.4,
+        "modified_reward": -3178.5,
+        "WIQL_reward": -3852.1
+    },
+    {
+        "initial_state_index": 34,
+        "baseline_reward": -3040.4,
+        "modified_reward": -3207.5,
+        "WIQL_reward": -3882.7
+    },
+    {
+        "initial_state_index": 35,
+        "baseline_reward": -2934.8,
+        "modified_reward": -3219.1,
+        "WIQL_reward": -3874.0
+    },
+    {
+        "initial_state_index": 36,
+        "baseline_reward": -3075.1,
+        "modified_reward": -3376.2,
+        "WIQL_reward": -4045.2
+    },
+    {
+        "initial_state_index": 37,
+        "baseline_reward": -3035.3,
+        "modified_reward": -3257.0,
+        "WIQL_reward": -3849.5
+    },
+    {
+        "initial_state_index": 38,
+        "baseline_reward": -3012.5,
+        "modified_reward": -3172.4,
+        "WIQL_reward": -3857.1
+    },
+    {
+        "initial_state_index": 39,
+        "baseline_reward": -3143.2,
+        "modified_reward": -3356.6,
+        "WIQL_reward": -4001.0
+    },
+    {
+        "initial_state_index": 40,
+        "baseline_reward": -2976.9,
+        "modified_reward": -3300.4,
+        "WIQL_reward": -3786.7
+    },
+    {
+        "initial_state_index": 41,
+        "baseline_reward": -3058.4,
+        "modified_reward": -3100.3,
+        "WIQL_reward": -3881.4
+    },
+    {
+        "initial_state_index": 42,
+        "baseline_reward": -2969.7,
+        "modified_reward": -3277.3,
+        "WIQL_reward": -3939.8
+    },
+    {
+        "initial_state_index": 43,
+        "baseline_reward": -3032.6,
+        "modified_reward": -3091.7,
+        "WIQL_reward": -3956.1
+    },
+    {
+        "initial_state_index": 44,
+        "baseline_reward": -3065.0,
+        "modified_reward": -3207.8,
+        "WIQL_reward": -3871.6
+    },
+    {
+        "initial_state_index": 45,
+        "baseline_reward": -2924.4,
+        "modified_reward": -3133.7,
+        "WIQL_reward": -3820.7
+    },
+    {
+        "initial_state_index": 46,
+        "baseline_reward": -3056.8,
+        "modified_reward": -3287.8,
+        "WIQL_reward": -3874.8
+    },
+    {
+        "initial_state_index": 47,
+        "baseline_reward": -3093.6,
+        "modified_reward": -3308.0,
+        "WIQL_reward": -3948.4
+    },
+    {
+        "initial_state_index": 48,
+        "baseline_reward": -2982.2,
+        "modified_reward": -3238.1,
+        "WIQL_reward": -3921.6
+    },
+    {
+        "initial_state_index": 49,
+        "baseline_reward": -3065.4,
+        "modified_reward": -3244.1,
+        "WIQL_reward": -3918.5
+    },
+    {
+        "initial_state_index": 50,
+        "baseline_reward": -3046.7,
+        "modified_reward": -3142.4,
+        "WIQL_reward": -3820.0
+    },
+    {
+        "initial_state_index": 51,
+        "baseline_reward": -3058.3,
+        "modified_reward": -3191.6,
+        "WIQL_reward": -3958.2
+    },
+    {
+        "initial_state_index": 52,
+        "baseline_reward": -3153.7,
+        "modified_reward": -3339.6,
+        "WIQL_reward": -3931.7
+    },
+    {
+        "initial_state_index": 53,
+        "baseline_reward": -3152.5,
+        "modified_reward": -3350.7,
+        "WIQL_reward": -3965.5
+    },
+    {
+        "initial_state_index": 54,
+        "baseline_reward": -3147.8,
+        "modified_reward": -3366.7,
+        "WIQL_reward": -3908.7
+    },
+    {
+        "initial_state_index": 55,
+        "baseline_reward": -3100.3,
+        "modified_reward": -3269.8,
+        "WIQL_reward": -3943.2
+    },
+    {
+        "initial_state_index": 56,
+        "baseline_reward": -3015.0,
+        "modified_reward": -3356.2,
+        "WIQL_reward": -3737.2
+    },
+    {
+        "initial_state_index": 57,
+        "baseline_reward": -3056.8,
+        "modified_reward": -3259.9,
+        "WIQL_reward": -3922.6
+    },
+    {
+        "initial_state_index": 58,
+        "baseline_reward": -3027.2,
+        "modified_reward": -3284.3,
+        "WIQL_reward": -3967.7
+    },
+    {
+        "initial_state_index": 59,
+        "baseline_reward": -2972.9,
+        "modified_reward": -3178.6,
+        "WIQL_reward": -3887.2
+    },
+    {
+        "initial_state_index": 60,
+        "baseline_reward": -3038.3,
+        "modified_reward": -3194.3,
+        "WIQL_reward": -3807.6
+    },
+    {
+        "initial_state_index": 61,
+        "baseline_reward": -2999.7,
+        "modified_reward": -3159.1,
+        "WIQL_reward": -3889.0
+    },
+    {
+        "initial_state_index": 62,
+        "baseline_reward": -3028.9,
+        "modified_reward": -3136.5,
+        "WIQL_reward": -3806.3
+    },
+    {
+        "initial_state_index": 63,
+        "baseline_reward": -2982.9,
+        "modified_reward": -3297.8,
+        "WIQL_reward": -3886.2
+    },
+    {
+        "initial_state_index": 64,
+        "baseline_reward": -2998.8,
+        "modified_reward": -3207.7,
+        "WIQL_reward": -3946.4
+    },
+    {
+        "initial_state_index": 65,
+        "baseline_reward": -3114.4,
+        "modified_reward": -3278.7,
+        "WIQL_reward": -3936.2
+    },
+    {
+        "initial_state_index": 66,
+        "baseline_reward": -2996.8,
+        "modified_reward": -3242.0,
+        "WIQL_reward": -3844.6
+    },
+    {
+        "initial_state_index": 67,
+        "baseline_reward": -2998.5,
+        "modified_reward": -3126.8,
+        "WIQL_reward": -3951.9
+    },
+    {
+        "initial_state_index": 68,
+        "baseline_reward": -2936.1,
+        "modified_reward": -3076.3,
+        "WIQL_reward": -3866.5
+    },
+    {
+        "initial_state_index": 69,
+        "baseline_reward": -3076.2,
+        "modified_reward": -3257.0,
+        "WIQL_reward": -3969.7
+    },
+    {
+        "initial_state_index": 70,
+        "baseline_reward": -3143.3,
+        "modified_reward": -3348.7,
+        "WIQL_reward": -4039.2
+    },
+    {
+        "initial_state_index": 71,
+        "baseline_reward": -3035.0,
+        "modified_reward": -3354.8,
+        "WIQL_reward": -3817.6
+    },
+    {
+        "initial_state_index": 72,
+        "baseline_reward": -3151.2,
+        "modified_reward": -3246.8,
+        "WIQL_reward": -3813.6
+    },
+    {
+        "initial_state_index": 73,
+        "baseline_reward": -3102.7,
+        "modified_reward": -3436.1,
+        "WIQL_reward": -3957.5
+    },
+    {
+        "initial_state_index": 74,
+        "baseline_reward": -3064.7,
+        "modified_reward": -3107.6,
+        "WIQL_reward": -3905.4
+    },
+    {
+        "initial_state_index": 75,
+        "baseline_reward": -3032.7,
+        "modified_reward": -3250.7,
+        "WIQL_reward": -4092.5
+    },
+    {
+        "initial_state_index": 76,
+        "baseline_reward": -3069.1,
+        "modified_reward": -3432.2,
+        "WIQL_reward": -3974.1
+    },
+    {
+        "initial_state_index": 77,
+        "baseline_reward": -3040.1,
+        "modified_reward": -3418.5,
+        "WIQL_reward": -3850.5
+    },
+    {
+        "initial_state_index": 78,
+        "baseline_reward": -2964.6,
+        "modified_reward": -3250.5,
+        "WIQL_reward": -3909.2
+    },
+    {
+        "initial_state_index": 79,
+        "baseline_reward": -3062.2,
+        "modified_reward": -3240.7,
+        "WIQL_reward": -3996.9
+    },
+    {
+        "initial_state_index": 80,
+        "baseline_reward": -3176.2,
+        "modified_reward": -3326.1,
+        "WIQL_reward": -3829.0
+    },
+    {
+        "initial_state_index": 81,
+        "baseline_reward": -2920.7,
+        "modified_reward": -3239.0,
+        "WIQL_reward": -3986.8
+    },
+    {
+        "initial_state_index": 82,
+        "baseline_reward": -2904.7,
+        "modified_reward": -3132.4,
+        "WIQL_reward": -3784.5
+    },
+    {
+        "initial_state_index": 83,
+        "baseline_reward": -3065.6,
+        "modified_reward": -3314.4,
+        "WIQL_reward": -4007.7
+    },
+    {
+        "initial_state_index": 84,
+        "baseline_reward": -3020.7,
+        "modified_reward": -3251.5,
+        "WIQL_reward": -3911.9
+    },
+    {
+        "initial_state_index": 85,
+        "baseline_reward": -3165.3,
+        "modified_reward": -3323.9,
+        "WIQL_reward": -3970.7
+    },
+    {
+        "initial_state_index": 86,
+        "baseline_reward": -3065.7,
+        "modified_reward": -3232.6,
+        "WIQL_reward": -3951.5
+    },
+    {
+        "initial_state_index": 87,
+        "baseline_reward": -3013.3,
+        "modified_reward": -3146.7,
+        "WIQL_reward": -3818.7
+    },
+    {
+        "initial_state_index": 88,
+        "baseline_reward": -2990.2,
+        "modified_reward": -3397.6,
+        "WIQL_reward": -3957.4
+    },
+    {
+        "initial_state_index": 89,
+        "baseline_reward": -3031.6,
+        "modified_reward": -3229.1,
+        "WIQL_reward": -3886.2
+    },
+    {
+        "initial_state_index": 90,
+        "baseline_reward": -2979.5,
+        "modified_reward": -3236.5,
+        "WIQL_reward": -3916.7
+    },
+    {
+        "initial_state_index": 91,
+        "baseline_reward": -3053.1,
+        "modified_reward": -3234.4,
+        "WIQL_reward": -3813.5
+    },
+    {
+        "initial_state_index": 92,
+        "baseline_reward": -2869.0,
+        "modified_reward": -3092.6,
+        "WIQL_reward": -3841.0
+    },
+    {
+        "initial_state_index": 93,
+        "baseline_reward": -2998.2,
+        "modified_reward": -3306.3,
+        "WIQL_reward": -3854.6
+    },
+    {
+        "initial_state_index": 94,
+        "baseline_reward": -3044.2,
+        "modified_reward": -3203.1,
+        "WIQL_reward": -3983.0
+    },
+    {
+        "initial_state_index": 95,
+        "baseline_reward": -3051.6,
+        "modified_reward": -3124.0,
+        "WIQL_reward": -3957.9
+    },
+    {
+        "initial_state_index": 96,
+        "baseline_reward": -3051.7,
+        "modified_reward": -3201.6,
+        "WIQL_reward": -3890.0
+    },
+    {
+        "initial_state_index": 97,
+        "baseline_reward": -3023.2,
+        "modified_reward": -3231.3,
+        "WIQL_reward": -3903.2
+    },
+    {
+        "initial_state_index": 98,
+        "baseline_reward": -3034.7,
+        "modified_reward": -3331.7,
+        "WIQL_reward": -4013.7
+    },
+    {
+        "initial_state_index": 99,
+        "baseline_reward": -3014.5,
+        "modified_reward": -3221.8,
+        "WIQL_reward": -3900.4
+    }
+]
