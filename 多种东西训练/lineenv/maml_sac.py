@@ -22,11 +22,40 @@ from lineEnv import lineEnv
 # 2) 离散Actor & Critic 网络定义
 # ===============================
 class Actor(nn.Module):
-    """
-    离散动作空间(2个动作)的Actor:
-      - forward输出一个logit (batch,1).
-      - 之后我们手动用: p(a=1) = sigmoid(logit - lambda), p(a=0) = 1 - p(a=1).
-    """
+    def __init__(self, state_dim, env_embed_dim):
+        super(Actor, self).__init__()
+        self.input_dim = state_dim + env_embed_dim
+        hidden_dim = 1024  # 增大隐藏层维度
+
+        self.fc1 = nn.Linear(self.input_dim, hidden_dim)
+        self.fc2 = nn.Linear(hidden_dim, hidden_dim)
+        self.fc3 = nn.Linear(hidden_dim, hidden_dim)
+        self.fc4 = nn.Linear(hidden_dim, hidden_dim)
+        self.fc5 = nn.Linear(hidden_dim, 1)  # single logit
+
+        self.activation = nn.GELU()  # GELU 激活比 ReLU 计算量更高
+        self.dropout = nn.Dropout(0.1)  # Dropout 增加计算复杂度
+
+    def forward(self, state, env_embed):
+        x = torch.cat([state, env_embed], dim=-1)  # (batch_size, feature_dim)
+
+        x = self.fc1(x)
+        x = self.activation(x)
+
+        x = self.fc2(x)
+        x = self.activation(x)
+        x = self.dropout(x)  # Dropout 影响部分计算
+
+        x = self.fc3(x)
+        x = self.activation(x)
+
+        x = self.fc4(x)
+        x = self.activation(x)
+
+        logit = self.fc5(x)  # (batch,1)
+        return logit
+
+"""class Actor(nn.Module):
     def __init__(self, state_dim, env_embed_dim):
         super(Actor, self).__init__()
         self.input_dim = state_dim + env_embed_dim
@@ -36,23 +65,53 @@ class Actor(nn.Module):
         self.relu = nn.ReLU()
 
     def forward(self, state, env_embed):
-        """
-        state:     (batch_size, state_dim)
-        env_embed: (batch_size, env_embed_dim), 表征任务(p,q,OptX,lambda)
-        return:    (batch_size,1) 的原始logit
-        """
         x = torch.cat([state, env_embed], dim=-1)
         x = self.relu(self.fc1(x))
         x = self.relu(self.fc2(x))
         logit = self.fc3(x)  # (batch,1)
-        return logit
-
+        return logit"""
 
 class Critic(nn.Module):
-    """
-    Critic输出Q(s,a=0)和Q(s,a=1)，拼成(batch,2).
-    同样拼上环境embedding (p,q,OptX,lambda).
-    """
+    def __init__(self, state_dim, env_embed_dim):
+        super(Critic, self).__init__()
+        self.input_dim = state_dim + env_embed_dim
+        hidden_dim = 1024  # 更大的隐藏层
+
+        self.fc1 = nn.Linear(self.input_dim, hidden_dim)
+        self.fc2 = nn.Linear(hidden_dim, hidden_dim)
+        self.fc3 = nn.Linear(hidden_dim, hidden_dim)
+        self.fc4 = nn.Linear(hidden_dim, hidden_dim)
+        self.fc5 = nn.Linear(hidden_dim, 2)  # Q(s, a=0) 和 Q(s, a=1)
+
+        self.activation = nn.GELU()  # 使用更平滑的激活函数
+        self.dropout = nn.Dropout(0.1)  # 增加计算量
+
+        # 额外增加残差连接
+        self.residual_fc = nn.Linear(self.input_dim, hidden_dim)
+
+    def forward(self, state, env_embed):
+        x = torch.cat([state, env_embed], dim=-1)
+        res = self.residual_fc(x)  # 残差连接
+
+        x = self.fc1(x)
+        x = self.activation(x)
+
+        x = self.fc2(x)
+        x = self.activation(x)
+        x = self.dropout(x)
+
+        x = self.fc3(x)
+        x = self.activation(x)
+
+        x = self.fc4(x)
+        x = self.activation(x)
+
+        x = x + res  # 加入残差
+
+        q_vals = self.fc5(x)  # (batch,2)
+        return q_vals
+
+"""class Critic(nn.Module):
     def __init__(self, state_dim, env_embed_dim):
         super(Critic, self).__init__()
         self.input_dim = state_dim + env_embed_dim
@@ -66,7 +125,7 @@ class Critic(nn.Module):
         x = self.relu(self.fc1(x))
         x = self.relu(self.fc2(x))
         q_vals = self.fc3(x)  # (batch,2)
-        return q_vals
+        return q_vals"""
 
 
 # ===============================
@@ -183,18 +242,18 @@ def main():
 
     # MAML超参数
     meta_iterations = 200
-    meta_batch_size = 20
+    meta_batch_size = 40
     inner_lr = 0.01        # 内环学习率
     meta_lr = 1e-3         # 外环学习率
     gamma = 0.99
     alpha = 0.2
 
     # 每个任务采集多少步做adaptation & meta
-    adaptation_steps_per_task = 500
-    meta_steps_per_task = 500
+    adaptation_steps_per_task = 512
+    meta_steps_per_task = 1024
 
-    batch_size = 128
-    memory_size = 10000 # replay buffer容量
+    batch_size = 256
+    memory_size = 500000 # replay buffer容量
 
     # 构建Meta-Actor & Meta-Critic
     meta_actor = Actor(state_dim, env_features_dim).to(device)
