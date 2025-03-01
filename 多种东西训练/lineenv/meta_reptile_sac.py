@@ -268,6 +268,221 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 # ------------------------------
+# 改进版 Reptile 训练逻辑 (带 Loss 可视化 & tqdm 进度条 & 参数保存)
+# ------------------------------
+
+# 设定超参数
+meta_learning_rate = 0.1  # Reptile 学习率
+num_meta_iterations = 50  # 外循环次数（元训练轮次）
+num_task_updates = 5      # 每个任务（臂）在内循环中的更新轮数
+num_tasks_per_batch = 3   # 每次外循环中并行训练的臂数
+
+# 初始化共享（元）参数
+meta_actor = Actor(state_dim, embed_dim).to(device)
+meta_critic1 = Critic(state_dim, embed_dim).to(device)
+meta_critic2 = Critic(state_dim, embed_dim).to(device)
+
+# 记录 Loss 以用于绘图
+meta_critic_losses = []
+meta_actor_losses = []
+
+# 使用 tqdm 包装外循环
+pbar = tqdm(range(num_meta_iterations), desc="Meta Training")
+for meta_iter in pbar:
+    # 随机采样多个任务（臂）
+    sampled_arms = random.sample(pq_selected, num_tasks_per_batch)
+
+    # 存储任务优化后的参数和 Loss
+    task_actor_params = []
+    task_critic1_params = []
+    task_critic2_params = []
+
+    critic_losses = []
+    actor_losses = []
+
+    for i, (p, q) in enumerate(sampled_arms):
+        # 创建环境
+        env = lineEnv.lineEnv(seed=42, N=10, OptX=99, p=p, q=q)
+
+        # 复制共享参数到本次任务模型
+        actor = Actor(state_dim, embed_dim).to(device)
+        critic1 = Critic(state_dim, embed_dim).to(device)
+        critic2 = Critic(state_dim, embed_dim).to(device)
+
+        actor.load_state_dict(meta_actor.state_dict())
+        critic1.load_state_dict(meta_critic1.state_dict())
+        critic2.load_state_dict(meta_critic2.state_dict())
+
+        # 目标网络
+        target_critic1 = Critic(state_dim, embed_dim).to(device)
+        target_critic2 = Critic(state_dim, embed_dim).to(device)
+        target_critic1.load_state_dict(critic1.state_dict())
+        target_critic2.load_state_dict(critic2.state_dict())
+
+        # 经验回放
+        memory = ReplayBuffer(memory_size)
+
+        # 预先计算环境特征的 embedding（使用已预训练的 embedding_net）
+        env_features = torch.tensor([99, p, q], dtype=torch.float32, device=device).unsqueeze(0)
+        env_embed_full = embedding_net(env_features).detach()
+
+        # 创建优化器
+        critic1_optimizer = optim.Adam(critic1.parameters(), lr=learning_rate)
+        critic2_optimizer = optim.Adam(critic2.parameters(), lr=learning_rate)
+        actor_optimizer = optim.Adam(actor.parameters(), lr=learning_rate)
+
+        # -------------------- Reptile 内循环 (任务训练) --------------------
+        for task_update in range(num_task_updates):
+            state_val = env.reset()
+            state = torch.tensor([state_val], dtype=torch.float32, device=device)
+
+            for step in range(max_steps_per_episode):
+                with torch.no_grad():
+                    logit = actor(state, env_embed_full)
+                    p_1 = torch.sigmoid(logit)
+                    action_sample = torch.bernoulli(p_1).long()
+                    action_int = int(action_sample.item())
+
+                next_state_val, reward, done, _ = env.step(action_int)
+                memory.push(state_val, action_int, reward, next_state_val, done)
+
+                state_val = next_state_val
+                state = torch.tensor([state_val], dtype=torch.float32, device=device)
+
+                # 只在达到 batch_size 时进行更新
+                if len(memory) >= batch_size:
+                    s_b, a_b, r_b, s2_b, d_b = memory.sample(batch_size)
+                    s2_b = s2_b.squeeze(-1)
+                    env_embed_b = env_embed_full.repeat(batch_size, 1)
+
+                    # ----- 更新 Critic -----
+                    with torch.no_grad():
+                        probs_next = actor.get_action_probs(s2_b, env_embed_b)
+                        q1_next = target_critic1(s2_b, env_embed_b)
+                        q2_next = target_critic2(s2_b, env_embed_b)
+                        q_min_next = torch.min(q1_next, q2_next)
+
+                        log_probs_next = torch.log(probs_next + 1e-8)
+                        inside_term = q_min_next - alpha * log_probs_next
+                        V_next = (probs_next * inside_term).sum(dim=1, keepdim=True)
+
+                        y = r_b + gamma * (1 - d_b) * V_next
+
+                    s_b = s_b.squeeze(-1)
+                    q1_vals = critic1(s_b, env_embed_b)
+                    q2_vals = critic2(s_b, env_embed_b)
+                    q1_chosen = q1_vals.gather(1, a_b)
+                    q2_chosen = q2_vals.gather(1, a_b)
+
+                    critic1_loss = nn.MSELoss()(q1_chosen, y)
+                    critic2_loss = nn.MSELoss()(q2_chosen, y)
+
+                    critic1_optimizer.zero_grad()
+                    critic1_loss.backward()
+                    critic1_optimizer.step()
+
+                    critic2_optimizer.zero_grad()
+                    critic2_loss.backward()
+                    critic2_optimizer.step()
+
+                    critic_loss = (critic1_loss.item() + critic2_loss.item()) * 0.5
+                    critic_losses.append(critic_loss)
+
+                    # ----- 更新 Actor -----
+                    probs_curr = actor.get_action_probs(s_b, env_embed_b)
+                    log_probs_curr = torch.log(probs_curr + 1e-8)
+                    q1_curr = critic1(s_b, env_embed_b)
+                    q2_curr = critic2(s_b, env_embed_b)
+                    q_min_curr = torch.min(q1_curr, q2_curr)
+
+                    inside_term_actor = alpha * log_probs_curr - q_min_curr
+                    actor_loss = (probs_curr * inside_term_actor).sum(dim=1).mean()
+
+                    actor_optimizer.zero_grad()
+                    actor_loss.backward()
+                    actor_optimizer.step()
+
+                    actor_losses.append(actor_loss.item())
+
+                    # ----- 软更新 Target Critic -----
+                    soft_update(critic1, target_critic1, tau)
+                    soft_update(critic2, target_critic2, tau)
+
+                if done:
+                    break
+
+        task_actor_params.append(actor.state_dict())
+        task_critic1_params.append(critic1.state_dict())
+        task_critic2_params.append(critic2.state_dict())
+
+    # -------------------- Reptile 外循环 (元参数更新) --------------------
+    def reptile_update(meta_model, task_models, lr):
+        """ Reptile 元参数更新，使用 state_dict 进行参数更新 """
+        meta_dict = meta_model.state_dict()
+        task_dicts = [t for t in task_models]
+
+        with torch.no_grad():
+            for key in meta_dict.keys():
+                # 取出所有任务在该参数上的参数值
+                task_params = torch.stack([task_dict[key] for task_dict in task_dicts])
+                avg_param = torch.mean(task_params, dim=0)
+                meta_dict[key] += lr * (avg_param - meta_dict[key])
+
+        meta_model.load_state_dict(meta_dict)
+
+    # 对 Actor & Critic 分别做 Reptile 更新
+    reptile_update(meta_actor, task_actor_params, meta_learning_rate)
+    reptile_update(meta_critic1, task_critic1_params, meta_learning_rate)
+    reptile_update(meta_critic2, task_critic2_params, meta_learning_rate)
+
+    # 记录本轮 Meta-Train 的平均损失
+    if len(critic_losses) > 0:
+        meta_critic_losses.append(sum(critic_losses) / len(critic_losses))
+    else:
+        meta_critic_losses.append(0.0)
+
+    if len(actor_losses) > 0:
+        meta_actor_losses.append(sum(actor_losses) / len(actor_losses))
+    else:
+        meta_actor_losses.append(0.0)
+
+    # 更新 tqdm 显示的损失信息
+    pbar.set_postfix({
+        "CriticLoss": f"{meta_critic_losses[-1]:.4f}",
+        "ActorLoss":  f"{meta_actor_losses[-1]:.4f}"
+    })
+
+# -------------------- 训练结束，绘制并保存 Loss 曲线 --------------------
+plt.figure()
+plt.plot(meta_critic_losses, label="Critic Loss")
+plt.plot(meta_actor_losses, label="Actor Loss")
+plt.xlabel("Meta Iterations")
+plt.ylabel("Loss")
+plt.legend()
+plt.title("Reptile Meta-Learning Loss Curve")
+plt.savefig("meta_sac/loss_curve.png")
+plt.show()
+
+# -------------------- 保存最终 Reptile 基础模型参数 --------------------
+os.makedirs("meta_sac", exist_ok=True)
+torch.save({
+    "meta_actor": meta_actor.state_dict(),
+    "meta_critic1": meta_critic1.state_dict(),
+    "meta_critic2": meta_critic2.state_dict()
+}, os.path.join("meta_sac", "base_model.pth"))
+
+print("训练结束，已保存最终的 Meta Actor 和 Meta Critics 参数到 `meta_sac/base_model.pth`。")
+
+
+"""import os
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import random
+import matplotlib.pyplot as plt
+from tqdm import tqdm
+
+# ------------------------------
 # 改进版 Reptile 训练逻辑 (带 Loss 可视化)
 # ------------------------------
 
@@ -418,7 +633,6 @@ for meta_iter in range(num_meta_iterations):
 
     # Reptile 更新
     def reptile_update(meta_model, task_models, lr):
-        """ Reptile 元参数更新，使用 state_dict 进行参数更新 """
         meta_dict = meta_model.state_dict()  # 获取 meta_model 的参数字典
         task_dicts = [task_model for task_model in task_models]  # 获取任务模型的参数字典
 
@@ -448,7 +662,7 @@ plt.legend()
 plt.title("Reptile Meta-Learning Loss Curve")
 plt.savefig("meta_sac/loss_curve.png")
 plt.show()
-
+"""
 
 """# ------------------------------
 # 主训练循环 (离散动作 SAC)

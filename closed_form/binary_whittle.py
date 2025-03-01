@@ -4,18 +4,15 @@ from tqdm import tqdm
 
 def bellman_equation(a_max, d_max, m, lambd, tol=1e-6, max_iter=100000):
     f = np.zeros((a_max + 1, d_max + 1))  # 初始化 f(a, d) 的表
-    f[1, 0] = 0  # 强制设定 f(1,0) = 0
     J = 0  # 初始化长期平均收益 J
     
-    #reference_point = (1, 0)  # 选择 (1,0) 作为参考点
-    reference_point = (a_max // 2, d_max // 2)
+    reference_point = (1, 0)  # 选择 (1,0) 作为参考点
+    #reference_point = (a_max // 2, d_max // 2)
     
     for _ in range(max_iter):
         f_old = f.copy()
         for a in range(1, a_max + 1):
             for d in range(d_max + 1):
-                if a == 1 and d == 0:
-                    continue
                 term1 = d + a - J + (1 - lambd) * f[min(a + 1, a_max), d] + lambd * f[1, min(d + a, d_max)]
                 term2 = a + m - J + (1 - lambd) * f[min(a + 1, a_max), 0] + lambd * f[1, min(a, d_max)]
                 f[a, d] = min(term1, term2)
@@ -24,7 +21,7 @@ def bellman_equation(a_max, d_max, m, lambd, tol=1e-6, max_iter=100000):
         if np.abs(J_new - J) < tol and np.max(np.abs(f - f_old)) < tol:
             break
         J = J_new
-    
+    f-=f[1,0]
     return f, J
 
 def whittle_index(a_max, d_max, lambd, tol=1e-6, max_iter=100000, w_tol=1e-4, w_iter=50):
