@@ -241,18 +241,18 @@ def main():
     state_dim = 1
 
     # MAML超参数
-    meta_iterations = 200
+    meta_iterations = 400
     meta_batch_size = 40
     inner_lr = 0.01        # 内环学习率
     meta_lr = 1e-3         # 外环学习率
     gamma = 0.99
-    alpha = 0.2
+    alpha = 0.1
 
     # 每个任务采集多少步做adaptation & meta
-    adaptation_steps_per_task = 512
-    meta_steps_per_task = 1024
+    adaptation_steps_per_task = 1024
+    meta_steps_per_task = 2048
 
-    batch_size = 256
+    batch_size = 512
     memory_size = 500000 # replay buffer容量
 
     # 构建Meta-Actor & Meta-Critic
