@@ -22,29 +22,38 @@ from lineEnv import lineEnv
 # 2) 离散Actor & Critic 网络定义
 # ===============================
 class Actor(nn.Module):
-    def __init__(self, state_dim, env_embed_dim):
+    """
+    Actor 只输入 state + (p, q, OptX).
+    不包含 lambda。
+    """
+    def __init__(self, state_dim):
         super(Actor, self).__init__()
-        self.input_dim = state_dim + env_embed_dim
-        hidden_dim = 1024  # 增大隐藏层维度
+        # 由于 Actor 不含 lambda，因此 env_embed_dim = 3
+        self.input_dim = state_dim + 3
 
+        hidden_dim = 1024  # 增大隐藏层维度
         self.fc1 = nn.Linear(self.input_dim, hidden_dim)
         self.fc2 = nn.Linear(hidden_dim, hidden_dim)
         self.fc3 = nn.Linear(hidden_dim, hidden_dim)
         self.fc4 = nn.Linear(hidden_dim, hidden_dim)
         self.fc5 = nn.Linear(hidden_dim, 1)  # single logit
 
-        self.activation = nn.GELU()  # GELU 激活比 ReLU 计算量更高
-        self.dropout = nn.Dropout(0.1)  # Dropout 增加计算复杂度
+        self.activation = nn.GELU()
+        self.dropout = nn.Dropout(0.1)
 
-    def forward(self, state, env_embed):
-        x = torch.cat([state, env_embed], dim=-1)  # (batch_size, feature_dim)
-
+    def forward(self, state, env_embed_3d):
+        """
+        state:         (batch_size, state_dim)
+        env_embed_3d:  (batch_size, 3) -- 只包含 (p,q,OptX)
+        输出: raw logit (batch_size, 1).
+        """
+        x = torch.cat([state, env_embed_3d], dim=-1)  # (batch_size, state_dim+3)
         x = self.fc1(x)
         x = self.activation(x)
 
         x = self.fc2(x)
         x = self.activation(x)
-        x = self.dropout(x)  # Dropout 影响部分计算
+        x = self.dropout(x)
 
         x = self.fc3(x)
         x = self.activation(x)
@@ -52,46 +61,40 @@ class Actor(nn.Module):
         x = self.fc4(x)
         x = self.activation(x)
 
-        logit = self.fc5(x)  # (batch,1)
+        logit = self.fc5(x)  # (batch_size,1)
         return logit
 
-"""class Actor(nn.Module):
-    def __init__(self, state_dim, env_embed_dim):
-        super(Actor, self).__init__()
-        self.input_dim = state_dim + env_embed_dim
-        self.fc1 = nn.Linear(self.input_dim, 256)
-        self.fc2 = nn.Linear( 256,  256)
-        self.fc3 = nn.Linear( 256, 1)  # single logit
-        self.relu = nn.ReLU()
-
-    def forward(self, state, env_embed):
-        x = torch.cat([state, env_embed], dim=-1)
-        x = self.relu(self.fc1(x))
-        x = self.relu(self.fc2(x))
-        logit = self.fc3(x)  # (batch,1)
-        return logit"""
 
 class Critic(nn.Module):
-    def __init__(self, state_dim, env_embed_dim):
+    """
+    Critic 输入 state + (p, q, OptX, lambda).
+    需要完整的 4 维环境信息。
+    """
+    def __init__(self, state_dim):
         super(Critic, self).__init__()
-        self.input_dim = state_dim + env_embed_dim
-        hidden_dim = 1024  # 更大的隐藏层
+        # Critic 需要 4 维的 env 信息
+        self.input_dim = state_dim + 4
 
+        hidden_dim = 1024  # 更大的隐藏层
         self.fc1 = nn.Linear(self.input_dim, hidden_dim)
         self.fc2 = nn.Linear(hidden_dim, hidden_dim)
         self.fc3 = nn.Linear(hidden_dim, hidden_dim)
         self.fc4 = nn.Linear(hidden_dim, hidden_dim)
         self.fc5 = nn.Linear(hidden_dim, 2)  # Q(s, a=0) 和 Q(s, a=1)
 
-        self.activation = nn.GELU()  # 使用更平滑的激活函数
-        self.dropout = nn.Dropout(0.1)  # 增加计算量
+        self.activation = nn.GELU()
+        self.dropout = nn.Dropout(0.1)
 
         # 额外增加残差连接
         self.residual_fc = nn.Linear(self.input_dim, hidden_dim)
 
-    def forward(self, state, env_embed):
-        x = torch.cat([state, env_embed], dim=-1)
-        res = self.residual_fc(x)  # 残差连接
+    def forward(self, state, env_embed_4d):
+        """
+        state:        (batch_size, state_dim)
+        env_embed_4d: (batch_size, 4) -- (p,q,OptX,lambda)
+        """
+        x = torch.cat([state, env_embed_4d], dim=-1)  # (batch_size, state_dim+4)
+        res = self.residual_fc(x)  # 残差
 
         x = self.fc1(x)
         x = self.activation(x)
@@ -107,25 +110,8 @@ class Critic(nn.Module):
         x = self.activation(x)
 
         x = x + res  # 加入残差
-
-        q_vals = self.fc5(x)  # (batch,2)
+        q_vals = self.fc5(x)  # (batch_size,2)
         return q_vals
-
-"""class Critic(nn.Module):
-    def __init__(self, state_dim, env_embed_dim):
-        super(Critic, self).__init__()
-        self.input_dim = state_dim + env_embed_dim
-        self.fc1 = nn.Linear(self.input_dim,  256)
-        self.fc2 = nn.Linear( 256,  256)
-        self.fc3 = nn.Linear( 256, 2)  # Q for a=0 and a=1
-        self.relu = nn.ReLU()
-
-    def forward(self, state, env_embed):
-        x = torch.cat([state, env_embed], dim=-1)
-        x = self.relu(self.fc1(x))
-        x = self.relu(self.fc2(x))
-        q_vals = self.fc3(x)  # (batch,2)
-        return q_vals"""
 
 
 # ===============================
@@ -136,6 +122,7 @@ class ReplayBuffer:
         self.buffer = deque(maxlen=max_size)
 
     def push(self, state, action, reward, next_state, env_embed):
+        # env_embed 这里依旧可以是 4 维 (p,q,OptX,lambda)
         self.buffer.append((state, action, reward, next_state, env_embed))
 
     def sample(self, batch_size):
@@ -157,9 +144,12 @@ class ReplayBuffer:
 def compute_sac_losses(actor, critic, batch, gamma, alpha, device):
     """
     给定 (s,a,r,s') 批，计算离散SAC中 actor_loss 和 critic_loss.
-    在这里我们手动根据 logit - lambda 来计算 p(a=1).
+    其中:
+      - Actor 的输入只包含 (p,q,OptX)，不含 lambda.
+      - 但是在计算 p(a=1) 时，会额外减去 env_embed_4d[:,3] (即 lambda).
     """
     states, actions, rewards, next_states, env_embeds = batch
+
     # 转成tensor
     states_t = torch.tensor(states, dtype=torch.float32, device=device)
     actions_t = torch.tensor(actions, dtype=torch.long, device=device)
@@ -167,20 +157,21 @@ def compute_sac_losses(actor, critic, batch, gamma, alpha, device):
     next_states_t = torch.tensor(next_states, dtype=torch.float32, device=device)
     env_embeds_t = torch.tensor(env_embeds, dtype=torch.float32, device=device)
 
-    # 当前 Q(s,a)
+    # ---------- Critic 计算 Q(s,a) ----------
     q_values = critic(states_t, env_embeds_t)  # (batch,2)
     q_action = q_values.gather(1, actions_t.unsqueeze(-1)).squeeze(-1)  # (batch,)
 
-    # 计算下一步的 v(s') (soft value)
+    # ---------- 目标 Q: r + gamma * V(s') ----------
     with torch.no_grad():
-        next_q_values = critic(next_states_t, env_embeds_t)  # (batch,2)
-        # 下一个state对应的 actor logits
-        next_logit = actor(next_states_t, env_embeds_t)      # (batch,1)
-        # 取出 env_embed 里的 lambda
-        lam_next = env_embeds_t[:, 3].view(-1, 1)            # (batch,1)
-        next_p1 = torch.sigmoid(next_logit - lam_next)       # (batch,1)
-        next_probs = torch.cat([1 - next_p1, next_p1], dim=-1)  # (batch,2)
-        next_log_probs = torch.log(next_probs + 1e-8)        # (batch,2)
+        next_q_values = critic(next_states_t, env_embeds_t)         # (batch,2)
+        # Actor 用 env_embed_3d = env_embed_4d[:, :3]
+        next_logit = actor(next_states_t, env_embeds_t[:, :3])      # (batch,1)
+        lam_next = env_embeds_t[:, 3:4]                             # (batch,1)
+        # 注意这里做 logit - lambda
+        next_p1 = torch.sigmoid(next_logit - lam_next)             # (batch,1)
+        next_probs = torch.cat([1 - next_p1, next_p1], dim=-1)      # (batch,2)
+
+        next_log_probs = torch.log(next_probs + 1e-8)
 
         # soft state value
         next_q = torch.sum(next_probs * next_q_values, dim=-1)         # (batch,)
@@ -191,14 +182,15 @@ def compute_sac_losses(actor, critic, batch, gamma, alpha, device):
     critic_loss = nn.MSELoss()(q_action, target_q)
 
     # ---------- Actor部分 ----------
-    logit = actor(states_t, env_embeds_t)            # (batch,1)
-    lam = env_embeds_t[:, 3].view(-1, 1)             # (batch,1)
-    p1 = torch.sigmoid(logit - lam)                  # (batch,1)
+    # Actor 输入: (state, env_embed_4d[:, :3])
+    logit = actor(states_t, env_embeds_t[:, :3])     # (batch,1)
+    lam_val = env_embeds_t[:, 3:4]                   # (batch,1)
+    # 这里做 logit - lambda
+    p1 = torch.sigmoid(logit - lam_val)              # (batch,1)
     probs = torch.cat([1 - p1, p1], dim=-1)          # (batch,2)
-    log_probs = torch.log(probs + 1e-8)              # (batch,2)
+    log_probs = torch.log(probs + 1e-8)
 
     q_vals = critic(states_t, env_embeds_t)          # (batch,2)
-    # actor的目标 = E[ Q + alpha * entropy ]
     q_expected = torch.sum(probs * q_vals, dim=-1)   # (batch,)
     entropy = -torch.sum(probs * log_probs, dim=-1)  # (batch,)
 
@@ -236,13 +228,12 @@ def main():
     lambda_min = 0
     lambda_max = 5
 
-    # 现在 env_features_dim = 4, 对应 (p, q, OptX, lambda)
-    env_features_dim = 4
+    # 现在 state_dim = 1 (比如线性环境里，可能只有一个位置/索引的 state)
     state_dim = 1
 
     # MAML超参数
-    meta_iterations = 200
-    meta_batch_size = 40
+    meta_iterations = 2
+    meta_batch_size = 2
     inner_lr = 0.01        # 内环学习率
     meta_lr = 1e-3         # 外环学习率
     gamma = 0.99
@@ -253,11 +244,12 @@ def main():
     meta_steps_per_task = 1024
 
     batch_size = 256
-    memory_size = 500000 # replay buffer容量
+    memory_size = 5000  # replay buffer容量
 
     # 构建Meta-Actor & Meta-Critic
-    meta_actor = Actor(state_dim, env_features_dim).to(device)
-    meta_critic = Critic(state_dim, env_features_dim).to(device)
+    # Actor 不输入 lambda, Critic 输入 lambda
+    meta_actor = Actor(state_dim).to(device)
+    meta_critic = Critic(state_dim).to(device)
 
     # 外环(元参数)优化器
     meta_actor_optim = optim.Adam(meta_actor.parameters(), lr=meta_lr)
@@ -266,8 +258,6 @@ def main():
     meta_losses_log = []
 
     # ============= MAML外环 ============
-
-    # 用 tqdm 给外层循环戴上进度条
     for outer_iter in tqdm(range(meta_iterations), desc="Meta Iteration"):
         # 用 list 存储本轮外环所有子任务的 meta-loss
         actor_loss_list = []
@@ -283,9 +273,10 @@ def main():
             # 构建该任务对应的环境
             env = lineEnv(seed=42, N=N, OptX=OptX, p=p_val, q=q_val)
 
-            # 任务embedding: (p, q, OptX, lambda)
-            env_embed = torch.tensor([p_val, q_val, float(OptX), lam],
-                                     dtype=torch.float32, device=device)
+            # 这里的 env_embed_4d = (p, q, OptX, lam)，以 4 维形式保存
+            # Critic 会用到 lam，但 Actor 只会取前 3 维
+            env_embed_4d = torch.tensor([p_val, q_val, float(OptX), lam],
+                                        dtype=torch.float32, device=device)
 
             # 2) 克隆 meta-params => fast params
             actor_fast = clone_model(meta_actor)
@@ -298,22 +289,32 @@ def main():
             state = env.reset()
             for _ in range(adaptation_steps_per_task):
                 state_arr = np.array(state, dtype=np.float32)
-                s_t = torch.from_numpy(state_arr).float().to(device)
+                s_t = torch.from_numpy(state_arr).unsqueeze(0).to(device)  # (1,1)
+
                 with torch.no_grad():
-                    logit = actor_fast(s_t, env_embed)        # (1,1)
-                    lam_val = env_embed[3]                   # scalar
-                    p1 = torch.sigmoid(logit - lam_val)       # (1,1)
-                    probs = torch.cat([1 - p1, p1], dim=-1)    # (1,2)
+                    # Actor forward 不包含 lam
+                    logit = actor_fast(s_t, env_embed_4d[:3].unsqueeze(0))  # (1,1)
+                    # 在这一步减去 lam
+                    lam_val = env_embed_4d[3].item()
+                    p1 = torch.sigmoid(logit - lam_val)                     # (1,1)
+
+                    probs = torch.cat([1 - p1, p1], dim=-1)  # (1,2)
                     dist = torch.distributions.Categorical(probs=probs)
                     action = dist.sample().item()
 
                 # 与环境交互
                 next_state, reward, done, _ = env.step(action)
+                # 如果动作为1，就减去 lambda
                 if action == 1:
                     reward = reward - lam
 
-                adapt_buffer.push(state_arr, action, reward, next_state,
-                                  env_embed.cpu().numpy())
+                adapt_buffer.push(
+                    state_arr, 
+                    action, 
+                    reward, 
+                    next_state, 
+                    env_embed_4d.cpu().numpy()  # 存4维
+                )
                 state = next_state
                 if done:
                     state = env.reset()
@@ -339,13 +340,13 @@ def main():
             state = env.reset()
             for _ in range(meta_steps_per_task):
                 state_arr = np.array(state, dtype=np.float32)
-                s_t = torch.from_numpy(state_arr).float().to(device)
+                s_t = torch.from_numpy(state_arr).unsqueeze(0).to(device)
 
                 with torch.no_grad():
-                    logit = actor_fast(s_t, env_embed)       # (1,1)
-                    lam_val = env_embed[3]                  # scalar
-                    p1 = torch.sigmoid(logit - lam_val)      # (1,1)
-                    probs = torch.cat([1 - p1, p1], dim=-1)   # (1,2)
+                    logit = actor_fast(s_t, env_embed_4d[:3].unsqueeze(0))
+                    lam_val = env_embed_4d[3].item()
+                    p1 = torch.sigmoid(logit - lam_val)
+                    probs = torch.cat([1 - p1, p1], dim=-1)
                     dist = torch.distributions.Categorical(probs=probs)
                     action = dist.sample().item()
 
@@ -353,8 +354,13 @@ def main():
                 if action == 1:
                     reward = reward - lam
 
-                meta_buffer.push(state_arr, action, reward, next_state,
-                                 env_embed.cpu().numpy())
+                meta_buffer.push(
+                    state_arr,
+                    action,
+                    reward,
+                    next_state,
+                    env_embed_4d.cpu().numpy()
+                )
                 state = next_state
                 if done:
                     state = env.reset()
@@ -367,8 +373,7 @@ def main():
             m_actor_loss, m_critic_loss = compute_sac_losses(
                 actor_fast, critic_fast, batch_meta, gamma, alpha, device
             )
-
-            # 把子任务的 loss 直接保存到 list (保留在图中)
+            # 把子任务的 loss 直接保存到 list (保留在计算图中)
             actor_loss_list.append(m_actor_loss)
             critic_loss_list.append(m_critic_loss)
 
@@ -386,17 +391,17 @@ def main():
 
             meta_losses_log.append((meta_actor_loss_val.item(), meta_critic_loss_val.item()))
         else:
-            # 如果没有任何有效 batch，则跳过
+            # 如果没有任何有效 batch，则记个0
             meta_losses_log.append((0.0, 0.0))
 
-    # ============= 画一下meta-loss曲线 ============
+    # ============= 画一下meta-loss曲线 ============ 
     actor_losses, critic_losses = zip(*meta_losses_log)
     plt.figure(figsize=(7,5))
     plt.plot(actor_losses, label="Meta-Actor Loss")
     plt.plot(critic_losses, label="Meta-Critic Loss")
     plt.xlabel("Meta-Iteration")
     plt.ylabel("Loss")
-    plt.title("MAML (Discrete SAC) on lineEnv with Lambda Cost")
+    plt.title("MAML (Discrete SAC) - Actor(logit - lambda)")
     plt.legend()
 
     # 创建保存目录
