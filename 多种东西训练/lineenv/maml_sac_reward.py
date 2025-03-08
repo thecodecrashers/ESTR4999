@@ -9,7 +9,7 @@ from tqdm import tqdm
 from lineEnv import lineEnv
 from maml_sac import Actor, Critic, ReplayBuffer, compute_sac_losses, clone_model
 
-
+Temperature =10.0
 def adapt_single_arm_with_many_lams(meta_actor,
                                     meta_critic,
                                     env: lineEnv,
@@ -56,7 +56,7 @@ def adapt_single_arm_with_many_lams(meta_actor,
                                         dtype=torch.float32, device=device)
             with torch.no_grad():
                 logit = actor_fast(s_t, env_embed_3d)
-                prob_1 = torch.sigmoid(logit - lam_val).item()
+                prob_1 = torch.sigmoid((logit - lam_val)/Temperature).item()
                 action = 1 if random.random() < prob_1 else 0
 
             next_state, reward, done, _ = env.step(action)
@@ -168,17 +168,19 @@ def main():
     N = 100
     OptX = 99
     arms_data = []
+    p = np.linspace(start=0.2, stop=0.8, num=num_arms)
+    q = p
     for i in range(num_arms):
-        p_val = random.random()
-        q_val = random.random()
+        p_val = p[i]
+        q_val = p[i]
         seed_val = random.randint(0, 99999)
         arms_data.append((p_val, q_val, seed_val))
 
     # ============ 3) 对每个臂都随机多条 lambda 去采集数据并训练 ============
     # 比如 num_lams=5 => 每个臂会随机生成5个lambda，每个lambda跑200步，总共1000步的数据进同一个Buffer做训练
-    num_lams = 5
+    num_lams = 15
     lam_min = 0.0
-    lam_max = 5.0
+    lam_max = 2.0
     adaptation_steps = 200
 
     arm_actors = []

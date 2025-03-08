@@ -227,7 +227,7 @@ def main():
 
     # 新增：lambda的最小值和最大值
     lambda_min = 0
-    lambda_max = 5
+    lambda_max = 2.0
 
     # 现在 state_dim = 1 (比如线性环境里，可能只有一个位置/索引的 state)
     state_dim = 1
