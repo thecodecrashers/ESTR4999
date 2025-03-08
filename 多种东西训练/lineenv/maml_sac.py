@@ -17,6 +17,7 @@ from tqdm import tqdm
 # ===========================================
 from lineEnv import lineEnv
 
+Temperature=10.0
 
 # ===============================
 # 2) 离散Actor & Critic 网络定义
@@ -168,7 +169,7 @@ def compute_sac_losses(actor, critic, batch, gamma, alpha, device):
         next_logit = actor(next_states_t, env_embeds_t[:, :3])      # (batch,1)
         lam_next = env_embeds_t[:, 3:4]                             # (batch,1)
         # 注意这里做 logit - lambda
-        next_p1 = torch.sigmoid(next_logit - lam_next)             # (batch,1)
+        next_p1 = torch.sigmoid((next_logit - lam_next)/Temperature)             # (batch,1)
         next_probs = torch.cat([1 - next_p1, next_p1], dim=-1)      # (batch,2)
 
         next_log_probs = torch.log(next_probs + 1e-8)
@@ -186,7 +187,7 @@ def compute_sac_losses(actor, critic, batch, gamma, alpha, device):
     logit = actor(states_t, env_embeds_t[:, :3])     # (batch,1)
     lam_val = env_embeds_t[:, 3:4]                   # (batch,1)
     # 这里做 logit - lambda
-    p1 = torch.sigmoid(logit - lam_val)              # (batch,1)
+    p1 = torch.sigmoid((logit - lam_val)/Temperature)              # (batch,1)
     probs = torch.cat([1 - p1, p1], dim=-1)          # (batch,2)
     log_probs = torch.log(probs + 1e-8)
 
@@ -296,7 +297,7 @@ def main():
                     logit = actor_fast(s_t, env_embed_4d[:3].unsqueeze(0))  # (1,1)
                     # 在这一步减去 lam
                     lam_val = env_embed_4d[3].item()
-                    p1 = torch.sigmoid(logit - lam_val)                     # (1,1)
+                    p1 = torch.sigmoid((logit - lam_val)/Temperature)                     # (1,1)
 
                     probs = torch.cat([1 - p1, p1], dim=-1)  # (1,2)
                     dist = torch.distributions.Categorical(probs=probs)
@@ -345,7 +346,7 @@ def main():
                 with torch.no_grad():
                     logit = actor_fast(s_t, env_embed_4d[:3].unsqueeze(0))
                     lam_val = env_embed_4d[3].item()
-                    p1 = torch.sigmoid(logit - lam_val)
+                    p1 = torch.sigmoid((logit - lam_val)/Temperature)
                     probs = torch.cat([1 - p1, p1], dim=-1)
                     dist = torch.distributions.Categorical(probs=probs)
                     action = dist.sample().item()
