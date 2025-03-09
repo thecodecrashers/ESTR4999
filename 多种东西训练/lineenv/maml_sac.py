@@ -17,7 +17,7 @@ from tqdm import tqdm
 # ===========================================
 from lineEnv import lineEnv
 
-Temperature=10.0
+Temperature=1
 
 # ===============================
 # 2) 离散Actor & Critic 网络定义
@@ -32,15 +32,14 @@ class Actor(nn.Module):
         # 由于 Actor 不含 lambda，因此 env_embed_dim = 3
         self.input_dim = state_dim + 3
 
-        hidden_dim = 1024  # 增大隐藏层维度
+        hidden_dim = 256  # 增大隐藏层维度
         self.fc1 = nn.Linear(self.input_dim, hidden_dim)
         self.fc2 = nn.Linear(hidden_dim, hidden_dim)
         self.fc3 = nn.Linear(hidden_dim, hidden_dim)
-        self.fc4 = nn.Linear(hidden_dim, hidden_dim)
+#        self.fc4 = nn.Linear(hidden_dim, hidden_dim)
         self.fc5 = nn.Linear(hidden_dim, 1)  # single logit
 
         self.activation = nn.GELU()
-        self.dropout = nn.Dropout(0.1)
 
     def forward(self, state, env_embed_3d):
         """
@@ -54,13 +53,12 @@ class Actor(nn.Module):
 
         x = self.fc2(x)
         x = self.activation(x)
-        x = self.dropout(x)
 
         x = self.fc3(x)
         x = self.activation(x)
 
-        x = self.fc4(x)
-        x = self.activation(x)
+#        x = self.fc4(x)
+#        x = self.activation(x)
 
         logit = self.fc5(x)  # (batch_size,1)
         return logit
@@ -76,18 +74,15 @@ class Critic(nn.Module):
         # Critic 需要 4 维的 env 信息
         self.input_dim = state_dim + 4
 
-        hidden_dim = 1024  # 更大的隐藏层
+        hidden_dim = 256  # 更大的隐藏层
         self.fc1 = nn.Linear(self.input_dim, hidden_dim)
         self.fc2 = nn.Linear(hidden_dim, hidden_dim)
         self.fc3 = nn.Linear(hidden_dim, hidden_dim)
-        self.fc4 = nn.Linear(hidden_dim, hidden_dim)
+#        self.fc4 = nn.Linear(hidden_dim, hidden_dim)
         self.fc5 = nn.Linear(hidden_dim, 2)  # Q(s, a=0) 和 Q(s, a=1)
 
         self.activation = nn.GELU()
         self.dropout = nn.Dropout(0.1)
-
-        # 额外增加残差连接
-        self.residual_fc = nn.Linear(self.input_dim, hidden_dim)
 
     def forward(self, state, env_embed_4d):
         """
@@ -95,7 +90,6 @@ class Critic(nn.Module):
         env_embed_4d: (batch_size, 4) -- (p,q,OptX,lambda)
         """
         x = torch.cat([state, env_embed_4d], dim=-1)  # (batch_size, state_dim+4)
-        res = self.residual_fc(x)  # 残差
 
         x = self.fc1(x)
         x = self.activation(x)
@@ -107,10 +101,8 @@ class Critic(nn.Module):
         x = self.fc3(x)
         x = self.activation(x)
 
-        x = self.fc4(x)
-        x = self.activation(x)
-
-        x = x + res  # 加入残差
+#        x = self.fc4(x)
+#        x = self.activation(x)
         q_vals = self.fc5(x)  # (batch_size,2)
         return q_vals
 
@@ -160,11 +152,13 @@ def compute_sac_losses(actor, critic, batch, gamma, alpha, device):
 
     # ---------- Critic 计算 Q(s,a) ----------
     q_values = critic(states_t, env_embeds_t)  # (batch,2)
+    q_values=torch.clamp(q_values,min=-200,max=200)
     q_action = q_values.gather(1, actions_t.unsqueeze(-1)).squeeze(-1)  # (batch,)
 
     # ---------- 目标 Q: r + gamma * V(s') ----------
     with torch.no_grad():
         next_q_values = critic(next_states_t, env_embeds_t)         # (batch,2)
+        next_q_values=torch.clamp(next_q_values,min=-200,max=200)
         # Actor 用 env_embed_3d = env_embed_4d[:, :3]
         next_logit = actor(next_states_t, env_embeds_t[:, :3])      # (batch,1)
         lam_next = env_embeds_t[:, 3:4]                             # (batch,1)
@@ -194,10 +188,8 @@ def compute_sac_losses(actor, critic, batch, gamma, alpha, device):
     q_vals = critic(states_t, env_embeds_t)          # (batch,2)
     q_expected = torch.sum(probs * q_vals, dim=-1)   # (batch,)
     entropy = -torch.sum(probs * log_probs, dim=-1)  # (batch,)
-
     actor_objective = q_expected + alpha * entropy
     actor_loss = -torch.mean(actor_objective)
-
     return actor_loss, critic_loss
 
 
@@ -233,19 +225,19 @@ def main():
     state_dim = 1
 
     # MAML超参数
-    meta_iterations = 200
-    meta_batch_size = 40
-    inner_lr = 0.01        # 内环学习率
+    meta_iterations = 1000
+    meta_batch_size = 32
+    inner_lr = 0.005        # 内环学习率
     meta_lr = 1e-3         # 外环学习率
     gamma = 0.99
-    alpha = 0.2
+    alpha = 0
 
     # 每个任务采集多少步做adaptation & meta
-    adaptation_steps_per_task = 512
-    meta_steps_per_task = 1024
+    adaptation_steps_per_task = 256
+    meta_steps_per_task = 256
 
     batch_size = 256
-    memory_size = 500000  # replay buffer容量
+    memory_size = 50000  # replay buffer容量
 
     # 构建Meta-Actor & Meta-Critic
     # Actor 不输入 lambda, Critic 输入 lambda
@@ -332,7 +324,7 @@ def main():
             fast_actor_optim.zero_grad()
             fast_critic_optim.zero_grad()
             a_actor_loss.backward(retain_graph=True)
-            a_critic_loss.backward()
+            a_critic_loss.backward(retain_graph=True)
             fast_actor_optim.step()
             fast_critic_optim.step()
 
@@ -389,8 +381,8 @@ def main():
             meta_loss.backward()
             meta_actor_optim.step()
             meta_critic_optim.step()
-
             meta_losses_log.append((meta_actor_loss_val.item(), meta_critic_loss_val.item()))
+            print(meta_losses_log)
         else:
             # 如果没有任何有效 batch，则记个0
             meta_losses_log.append((0.0, 0.0))

@@ -9,13 +9,13 @@ from tqdm import tqdm
 from lineEnv import lineEnv
 from maml_sac import Actor, Critic, ReplayBuffer, compute_sac_losses, clone_model
 
-Temperature =10.0
+Temperature =100000.0
 def adapt_single_arm_with_many_lams(meta_actor,
                                     meta_critic,
                                     env: lineEnv,
                                     device,
                                     lam_min=0.0,
-                                    lam_max=5.0,
+                                    lam_max=2.0,
                                     num_lams=5,
                                     adaptation_steps=200,
                                     batch_size=64,
