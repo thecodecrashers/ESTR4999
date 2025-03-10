@@ -61,6 +61,7 @@ class Actor(nn.Module):
 #        x = self.activation(x)
 
         logit = self.fc5(x)  # (batch_size,1)
+        logit=torch.clamp(logit, min=-2, max=2)
         return logit
 
 

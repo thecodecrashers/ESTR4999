@@ -57,6 +57,7 @@ class Actor(nn.Module):
         x = self.activation(x)
 
         logit = self.fc4(x)
+#        logit=torch.clamp(logit,min=-2,max=2)
         return logit
 
 
