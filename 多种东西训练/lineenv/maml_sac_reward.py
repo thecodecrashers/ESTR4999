@@ -245,7 +245,7 @@ def main():
     rollout_steps = 200
 
     # 这里就是您想要的多次外层循环次数
-    K_outer = 1000
+    K_outer = 1
 
     arm_actors = []
     arm_critics = []

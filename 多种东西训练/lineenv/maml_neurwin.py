@@ -4,46 +4,279 @@ import torch.nn as nn
 import torch.optim as optim
 import numpy as np
 import random
-from collections import deque
+from tqdm import tqdm
 import matplotlib.pyplot as plt
 import os
 
-# 进度条
-from tqdm import tqdm
-
-# ===========================================
-# 1) 导入自定义环境 lineEnv
-#    假设你的文件名是 lineEnv.py，里面定义了 class lineEnv
-# ===========================================
+# Suppose you have lineEnv
 from lineEnv import lineEnv
 
-# 用于 Actor 输出的温度
 Temperature = 1.0
+gamma       = 0.99
 
-# ===============================
-# 1) 只保留 Actor 网络
-# ===============================
 class Actor(nn.Module):
     def __init__(self, state_dim):
         super(Actor, self).__init__()
         self.input_dim = state_dim + 3
         hidden_dim = 256  
-
         self.fc1 = nn.Linear(self.input_dim, hidden_dim)
         self.fc2 = nn.Linear(hidden_dim, hidden_dim)
         self.fc3 = nn.Linear(hidden_dim, hidden_dim)
-        self.fc5 = nn.Linear(hidden_dim, 1)  # single logit
-
+        self.fc5 = nn.Linear(hidden_dim, 1) 
         self.activation = nn.GELU()
-
-        # 应用自定义初始化
         self.apply(self._init_weights)
 
     def _init_weights(self, m):
         if isinstance(m, nn.Linear):
+            nn.init.constant_(m.weight, 0.01)
+            nn.init.constant_(m.bias, 0.01)
+
+    def forward(self, state, env_embed_3d):
+        """
+        state: (batch, state_dim)
+        env_embed_3d: (batch, 3) => (p, q, OptX)
+        """
+        x = torch.cat([state, env_embed_3d], dim=-1)
+        x = self.activation(self.fc1(x))
+        x = self.activation(self.fc2(x))
+        x = self.activation(self.fc3(x))
+        logit = self.fc5(x)
+        return logit
+
+
+def clone_model(model: nn.Module):
+    import copy
+    return copy.deepcopy(model)
+
+
+def rollout_one_episode(actor, env, start_state, lam, gamma, device, max_steps=200):
+    """
+    Roll out an episode from a specific start_state, returning:
+       sum_{t}[ G_t * log_prob(a_t) ].
+    """
+    # Reset the environment and force the state to `start_state`.
+    env.reset()
+    env.state = start_state
+
+    log_probs = []
+    rewards   = []
+
+    for step_i in range(max_steps):
+        # -- Observe current state as a torch tensor (requires_grad=False is fine).
+        s_t = torch.tensor([env.state], dtype=torch.float32, device=device)
+        
+        # -- Forward pass through actor (NO 'with torch.no_grad()'!)
+        logit = actor(
+            s_t.unsqueeze(0),
+            torch.tensor([env.p, env.q, float(env.OptX)], 
+                         dtype=torch.float32, device=device).unsqueeze(0)
+        )
+        
+        # -- Adjust by lambda, then form probabilities
+        adj_logit = (logit - lam) / Temperature
+        p1 = torch.sigmoid(adj_logit)           
+        probs = torch.cat([1 - p1, p1], dim=-1)  # shape (1,2)
+        
+        # -- Sample action
+        dist = torch.distributions.Categorical(probs=probs)
+        action = dist.sample()             # shape (), an int {0,1}
+        log_prob = dist.log_prob(action)   # shape ()
+
+        # -- Step environment
+        next_state, reward, done, _ = env.step(action.item())
+        # subtract lam if action=1
+        if action.item() == 1:
+            reward -= lam
+
+        log_probs.append(log_prob)
+        rewards.append(reward)
+
+        if done:
+            break
+
+    T = len(rewards)
+    if T == 0:
+        return torch.tensor(0.0, device=device, requires_grad=False)
+
+    # Convert rewards => torch for discounted returns
+    rewards_t  = torch.tensor(rewards, dtype=torch.float32, device=device)
+    log_probs_t = torch.stack(log_probs)  # shape (T,)
+
+    # Compute discounted returns
+    returns_t = torch.zeros(T, dtype=torch.float32, device=device)
+    running_return = 0.0
+    for t in reversed(range(T)):
+        running_return = rewards_t[t] + gamma * running_return
+        returns_t[t] = running_return
+
+    # sum_{t=0..T-1}[ G_t * log_prob(a_t) ]
+    total_objective = torch.sum(returns_t * log_probs_t)
+    return total_objective
+
+import torch
+import concurrent.futures
+import os
+
+def reinforce_loss_over_all_states(actor, env, lam, gamma, device, N, max_steps=200):
+    """
+    Use multithreading to parallelize rollouts for multiple states.
+    """
+    total_obj = torch.tensor(0.0, device=device)  # Keep as torch scalar
+
+    # Get the number of available CPU cores
+    num_threads = min(os.cpu_count(), N)  # Use up to N threads or max available CPU cores
+    
+    # Define a function wrapper for parallel execution
+    def rollout_wrapper(s):
+        return rollout_one_episode(actor, env, s, lam, gamma, device, max_steps)
+
+    # Use ThreadPoolExecutor for parallel execution
+    with concurrent.futures.ThreadPoolExecutor(max_workers=num_threads) as executor:
+        results = list(executor.map(rollout_wrapper, range(N)))
+
+    # Sum up all results
+    total_obj = torch.stack(results).sum()  # Ensure gradient flow remains intact
+
+    return total_obj
+
+
+"""
+def reinforce_loss_over_all_states(actor, env, lam, gamma, device, N, max_steps=200):
+    total_obj = torch.tensor(0.0, device=device)  # keep it as a torch scalar
+    for s in range(N):
+        ep_obj = rollout_one_episode(actor, env, s, lam, gamma, device, max_steps)
+        total_obj = total_obj + ep_obj
+    return total_obj"""
+ 
+
+def main():
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print("Using device:", device)
+
+    # Hyperparams
+    N = 100
+    OptX = 99
+    nb_arms = 50
+    prob_values = np.linspace(start=0.1, stop=0.9, num=nb_arms)
+    pq_tasks = [(float(p), float(p)) for p in prob_values]
+    lambda_min = 0.0
+    lambda_max = 2.0
+
+    state_dim = 1
+    meta_iterations = 200
+    meta_batch_size = 4   # a bit smaller for speed
+    inner_lr = 0.01
+    meta_lr  = 0.01
+    gamma = 0.99
+
+    adaptation_steps_per_task = 2   # how many gradient steps to adapt
+    meta_steps_per_task       = 1   # after adaptation, how many times we measure meta-objective
+    max_rollout_len = 50     # horizon for each rollout
+
+    # Build meta actor
+    meta_actor = Actor(state_dim).to(device)
+    meta_actor_optim = optim.Adam(meta_actor.parameters(), lr=meta_lr)
+
+    meta_losses_log = []
+
+    for outer_iter in tqdm(range(meta_iterations), desc="Meta Iteration"):
+        actor_loss_list = []
+
+        # sample tasks
+        tasks_batch = random.sample(pq_tasks, meta_batch_size)
+
+        for (p_val, q_val) in tasks_batch:
+            lam = random.uniform(lambda_min, lambda_max)
+
+            # Construct environment for this sub-task
+            env = lineEnv(seed=42, N=N, OptX=OptX, p=p_val, q=q_val)
+
+            # 1) Clone meta-actor => fast actor
+            actor_fast = clone_model(meta_actor)
+            fast_actor_optim = optim.Adam(actor_fast.parameters(), lr=inner_lr)
+
+            # 2) Inner loop: adapt actor_fast
+            for _ in range(adaptation_steps_per_task):
+                fast_actor_optim.zero_grad()
+                # big_objective = sum_{s=0..N-1}[ sum_{t}[G_t logπ(a_t|s_t)] ]
+                big_objective = reinforce_loss_over_all_states(
+                    actor_fast, env, lam, gamma, device, N, max_steps=max_rollout_len
+                )
+                adapt_loss = -big_objective  # gradient ascent => negate objective
+                adapt_loss.backward()
+                torch.nn.utils.clip_grad_norm_(actor_fast.parameters(), 10)
+                fast_actor_optim.step()
+
+            # 3) Meta-objective: after adaptation, measure performance again
+            meta_obj = reinforce_loss_over_all_states(
+                actor_fast, env, lam, gamma, device, N, max_steps=max_rollout_len
+            )
+            # We'll store negative for gradient descent on meta-actor
+            actor_loss_list.append(-meta_obj)
+
+        # 4) Combine all meta losses from tasks, do a single update on meta-actor
+        if len(actor_loss_list) > 0:
+            meta_loss_val = torch.mean(torch.stack(actor_loss_list))
+            meta_actor_optim.zero_grad()
+            meta_loss_val.backward()
+            torch.nn.utils.clip_grad_norm_(meta_actor.parameters(), 10)
+            meta_actor_optim.step()
+
+            meta_losses_log.append(meta_loss_val.item())
+            print(f"[Meta Iter={outer_iter}] MetaLoss={meta_loss_val.item():.3f}")
+        else:
+            meta_losses_log.append(0.0)
+
+    # Plot meta-loss
+    plt.figure(figsize=(7,5))
+    plt.plot(meta_losses_log, label="Meta-Actor Loss (REINFORCE)")
+    plt.xlabel("Meta-Iteration")
+    plt.ylabel("Loss")
+    plt.title("MAML + REINFORCE (No Replay Buffer)")
+    plt.legend()
+    os.makedirs("maml_neurwin", exist_ok=True)
+    plt.savefig("maml_neurwin/loss_curve.png")
+    plt.show()
+
+    # Save final model
+    torch.save(meta_actor.state_dict(), "maml_neurwin/meta_actor.pth")
+
+if __name__ == "__main__":
+    main()
+
+
+
+
+"""import math
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import numpy as np
+import random
+from collections import deque
+import matplotlib.pyplot as plt
+import os
+
+from tqdm import tqdm
+from lineEnv import lineEnv
+
+Temperature = 1.0
+
+class Actor(nn.Module):
+    def __init__(self, state_dim):
+        super(Actor, self).__init__()
+        self.input_dim = state_dim + 3
+        hidden_dim = 256  
+        self.fc1 = nn.Linear(self.input_dim, hidden_dim)
+        self.fc2 = nn.Linear(hidden_dim, hidden_dim)
+        self.fc3 = nn.Linear(hidden_dim, hidden_dim)
+        self.fc5 = nn.Linear(hidden_dim, 1) 
+        self.activation = nn.GELU()
+        self.apply(self._init_weights)
+    def _init_weights(self, m):
+        if isinstance(m, nn.Linear):
             nn.init.constant_(m.weight, 0.01)  # 权重初始化为0
             nn.init.constant_(m.bias, 0.01)    # 偏置初始化为0
-
     def forward(self, state, env_embed_3d):
         x = torch.cat([state, env_embed_3d], dim=-1)
         x = self.fc1(x)
@@ -58,15 +291,9 @@ class Actor(nn.Module):
 class ReplayBuffer:
     def __init__(self, max_size=100000):
         self.buffer = deque(maxlen=max_size)
-
     def push(self, state, action, reward, next_state, env_embed):
         self.buffer.append((state, action, reward, next_state, env_embed))
-
     def sample_all(self):
-        """
-        这里返回全部数据，用于一次性计算蒙特卡洛回报。
-        你也可以自己改成只返回固定 batch_size 的数据。
-        """
         batch = list(self.buffer)
         states, actions, rewards, next_states, env_embeds = zip(*batch)
         return (np.array(states, dtype=np.float32),
@@ -74,17 +301,11 @@ class ReplayBuffer:
                 np.array(rewards, dtype=np.float32),
                 np.array(next_states, dtype=np.float32),
                 np.array(env_embeds, dtype=np.float32))
-
     def __len__(self):
         return len(self.buffer)
-
     def clear(self):
         self.buffer.clear()
 
-
-# ===============================
-# 3) 蒙特卡洛方式计算 Actor 的 loss
-# ===============================
 def compute_mc_actor_loss(actor, transitions, gamma, device):
     states, actions, rewards, _, env_embeds = transitions
 
@@ -94,17 +315,13 @@ def compute_mc_actor_loss(actor, transitions, gamma, device):
     rewards_t = torch.tensor(rewards, dtype=torch.float32, device=device)
     env_embeds_t = torch.tensor(env_embeds, dtype=torch.float32, device=device)
 
-    # ---- 计算蒙特卡洛回报 G_t （从后往前折扣累加）----
     returns = np.zeros_like(rewards)
     G = 0.0
-    # 这里假设没有显式的done标记；若碰到done可以把G清零。
     for i in reversed(range(len(rewards))):
         G = rewards[i] + gamma * G
         returns[i] = G
     returns_t = torch.tensor(returns, dtype=torch.float32, device=device)
 
-    # ---- 计算 log_prob(a_t) ----
-    # Actor 只用 env_embed 的前3维 (p,q,OptX)
     logit = actor(states_t, env_embeds_t[:, :3])  # (batch,1)
     lam_val = env_embeds_t[:, 3:4]                # (batch,1)
     # 这里做 (logit - lam) / Temperature
@@ -123,27 +340,15 @@ def compute_mc_actor_loss(actor, transitions, gamma, device):
     actor_loss = - torch.mean(returns_t * chosen_log_probs)
     return actor_loss
 
-
-# ===============================
-# 4) 复制模型 (用于MAML内环)
-# ===============================
 def clone_model(model: nn.Module):
     import copy
     return copy.deepcopy(model)
-
-
-# ================================
-# 5) 主要 MAML + 蒙特卡洛PG 训练循环
-# ================================
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("Using device:", device)
 
-    # ---------- 参数 ----------
     N = 100
     OptX = 99
-
-    # 定义一组任务: (p,q) 组合
     nb_arms = 50
     prob_values = np.linspace(start=0.1, stop=0.9, num=nb_arms)
     #pq_tasks = [(float(p), float(q)) for p, q in zip(prob_values, reversed(prob_values))]
@@ -151,18 +356,12 @@ def main():
     # lambda 的最小值和最大值
     lambda_min = 0
     lambda_max = 2.0
-
-    # state_dim = 1 (例如环境中只有一个位置索引当作state)
     state_dim = 1
-
-    # MAML 超参数
-    meta_iterations = 1250
+    meta_iterations = 10
     meta_batch_size = 32
-    inner_lr = 1e-5       # 内环学习率
-    meta_lr = 1e-5         # 外环学习率
+    inner_lr = 0.01    # 内环学习率
+    meta_lr = 0.01       # 外环学习率
     gamma = 0.99
-
-    # 每个任务采集多少步做adaptation & meta
     adaptation_steps_per_task = 128
     meta_steps_per_task = 128
 
@@ -213,7 +412,6 @@ def main():
             state = env.reset()
             for hh in range(adaptation_steps_per_task):
                 state_arr = np.array(state, dtype=np.float32)
-
                 # 策略采样动作
                 s_t = torch.from_numpy(state_arr).unsqueeze(0).to(device)  # (1,1)
                 with torch.no_grad():
@@ -235,8 +433,6 @@ def main():
 
                 state = hh%100
                 state=np.array([state],dtype=np.intc)
-                if done:
-                    state = env.reset()
 
             adapt_data = adapt_buffer.sample_all() 
             a_actor_loss = compute_mc_actor_loss(actor_fast, adapt_data, gamma, device)
@@ -248,7 +444,7 @@ def main():
             # 5) 用更新后的 fast网络收集 meta 数据
             meta_buffer = ReplayBuffer()
             state = env.reset()
-            for _ in range(meta_steps_per_task):
+            for hh in range(meta_steps_per_task):
                 state_arr = np.array(state, dtype=np.float32)
                 s_t = torch.from_numpy(state_arr).unsqueeze(0).to(device)
                 with torch.no_grad():
@@ -266,9 +462,8 @@ def main():
                 meta_buffer.push(state_arr, action, reward, next_state,
                                  env_embed_4d.cpu().numpy())
 
-                state = next_state
-                if done:
-                    state = env.reset()
+                state = hh%100
+                state=np.array([state],dtype=np.intc)
 
             if len(meta_buffer) < 10:
                 continue
@@ -276,8 +471,6 @@ def main():
             # 6) 计算对 meta-params 的损失 (meta-loss)
             meta_data = meta_buffer.sample_all()
             m_actor_loss = compute_mc_actor_loss(actor_fast, meta_data, gamma, device)
-            # 不要在 fast_actor_optim 上 step，而是把梯度回传到 meta_actor
-            # (因为 actor_fast 是从 meta_actor clone 出来的，会共享初始参数)
             actor_loss_list.append(m_actor_loss)
 
         if len(actor_loss_list) > 0:
@@ -286,7 +479,6 @@ def main():
             meta_actor_loss_val.backward()
             torch.nn.utils.clip_grad_norm(meta_actor.parameters(), 10)
             meta_actor_optim.step()
-
             meta_losses_log.append(meta_actor_loss_val.item())
             print(f"[Meta Iter={outer_iter}] loss={meta_actor_loss_val.item():.3f}")
         else:
@@ -310,3 +502,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+"""

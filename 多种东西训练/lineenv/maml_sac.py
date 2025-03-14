@@ -137,7 +137,6 @@ def compute_sac_losses(actor, critic, batch, gamma, alpha, device):
         next_q = torch.sum(next_probs * next_q_values, dim=-1)         # (batch,)
         next_entropy = -torch.sum(next_probs * next_log_probs, dim=-1) # (batch,)
         target_v = next_q + alpha * next_entropy
-
     target_q = rewards_t + gamma * target_v
     critic_loss = nn.MSELoss()(q_action, target_q)
 
@@ -148,7 +147,7 @@ def compute_sac_losses(actor, critic, batch, gamma, alpha, device):
     # 这里做 logit - lambda
     p1 = torch.sigmoid((logit - lam_val)/Temperature)              # (batch,1)
     probs = torch.cat([1 - p1, p1], dim=-1)          # (batch,2)
-    log_probs = torch.log(probs + 1e-8)
+    log_probs = torch.log(probs+1e-8)
 
     q_vals = critic(states_t, env_embeds_t)          # (batch,2)
     q_expected = torch.sum(probs * q_vals, dim=-1)   # (batch,)
@@ -184,10 +183,10 @@ def main():
     state_dim = 1
 
     # MAML超参数
-    meta_iterations = 1000
+    meta_iterations = 10
     meta_batch_size = 32
     inner_lr = 0.001        # 内环学习率
-    meta_lr = 1e-4         # 外环学习率
+    meta_lr = 0.001              # 外环学习率
     gamma = 0.99
     alpha = 0
 
@@ -196,7 +195,7 @@ def main():
     meta_steps_per_task = 128
 
     batch_size = 128
-    memory_size = 50000  # replay buffer容量
+    memory_size = 500000  # replay buffer容量
 
     # 构建Meta-Actor & Meta-Critic
     # Actor 不输入 lambda, Critic 输入 lambda
@@ -258,7 +257,6 @@ def main():
                     # 在这一步减去 lam
                     lam_val = env_embed_4d[3].item()
                     p1 = torch.sigmoid((logit - lam_val)/Temperature)                     # (1,1)
-
                     probs = torch.cat([1 - p1, p1], dim=-1)  # (1,2)
                     dist = torch.distributions.Categorical(probs=probs)
                     action = dist.sample().item()
@@ -301,7 +299,7 @@ def main():
             # 5) 用更新后的 fast网络收集 meta数据
             meta_buffer = ReplayBuffer(max_size=memory_size)
             state = env.reset()
-            for _ in range(meta_steps_per_task):
+            for hh in range(meta_steps_per_task):
                 state_arr = np.array(state, dtype=np.float32)
                 s_t = torch.from_numpy(state_arr).unsqueeze(0).to(device)
 
@@ -324,12 +322,10 @@ def main():
                     next_state,
                     env_embed_4d.cpu().numpy()
                 )
-                state = next_state
+                state = hh%100
+                state=np.array([state],dtype=np.intc)
                 if done:
                     state = env.reset()
-
-            if len(meta_buffer) < batch_size:
-                continue
 
             # 6) 在 fast网络上计算 meta-loss，但梯度回传到 meta-params
             batch_meta = meta_buffer.sample(batch_size)
@@ -345,7 +341,6 @@ def main():
             meta_actor_loss_val = torch.mean(torch.stack(actor_loss_list))
             meta_critic_loss_val = torch.mean(torch.stack(critic_loss_list))
             meta_loss = meta_actor_loss_val + meta_critic_loss_val
-
             meta_actor_optim.zero_grad()
             meta_critic_optim.zero_grad()
             meta_loss.backward()
@@ -354,7 +349,8 @@ def main():
             meta_actor_optim.step()
             meta_critic_optim.step()
             meta_losses_log.append((meta_actor_loss_val.item(), meta_critic_loss_val.item()))
-            print(meta_losses_log)
+            print(meta_actor_loss_val.item())
+            print(meta_critic_loss_val.item())
         else:
             # 如果没有任何有效 batch，则记个0
             meta_losses_log.append((0.0, 0.0))
