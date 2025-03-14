@@ -24,52 +24,38 @@ Temperature = 1.0
 # 1) 只保留 Actor 网络
 # ===============================
 class Actor(nn.Module):
-    """
-    Actor 输入: state + (p, q, OptX), 不包含 lambda。
-    输出：单个 logit (未经过 sigmoid)，用于动作1的概率。
-    """
     def __init__(self, state_dim):
         super(Actor, self).__init__()
         self.input_dim = state_dim + 3
+        hidden_dim = 256  
 
-        hidden_dim = 256
         self.fc1 = nn.Linear(self.input_dim, hidden_dim)
         self.fc2 = nn.Linear(hidden_dim, hidden_dim)
         self.fc3 = nn.Linear(hidden_dim, hidden_dim)
-        self.fc4 = nn.Linear(hidden_dim, 1)  # single logit
+        self.fc5 = nn.Linear(hidden_dim, 1)  # single logit
 
         self.activation = nn.GELU()
 
+        # 应用自定义初始化
+        self.apply(self._init_weights)
+
+    def _init_weights(self, m):
+        if isinstance(m, nn.Linear):
+            nn.init.constant_(m.weight, 0.01)  # 权重初始化为0
+            nn.init.constant_(m.bias, 0.01)    # 偏置初始化为0
+
     def forward(self, state, env_embed_3d):
-        """
-        state:        (batch_size, state_dim)
-        env_embed_3d: (batch_size, 3) => (p,q,OptX)
-        返回: (batch_size, 1) 的logit
-        """
         x = torch.cat([state, env_embed_3d], dim=-1)
         x = self.fc1(x)
         x = self.activation(x)
-
         x = self.fc2(x)
         x = self.activation(x)
-
         x = self.fc3(x)
         x = self.activation(x)
-
-        logit = self.fc4(x)
-#        logit=torch.clamp(logit,min=-2,max=2)
+        logit = self.fc5(x)  
         return logit
 
-
-# ===============================
-# 2) 简单的 ReplayBuffer
-# ===============================
 class ReplayBuffer:
-    """
-    这里用于存储 (state, action, reward, next_state, env_embed)，
-    但在纯蒙特卡洛里，其实不用 Critic，所以 next_state 用不上了。
-    依旧保留是为了尽量不破坏你的原结构。
-    """
     def __init__(self, max_size=100000):
         self.buffer = deque(maxlen=max_size)
 
@@ -100,12 +86,6 @@ class ReplayBuffer:
 # 3) 蒙特卡洛方式计算 Actor 的 loss
 # ===============================
 def compute_mc_actor_loss(actor, transitions, gamma, device):
-    """
-    给定采集到的多步 (s,a,r,...)，用蒙特卡洛方式（回溯折扣累加）计算总回报，
-    并对 Actor 做 REINFORCE-like 更新： L = - E[ G_t * log π(a_t|s_t) ].
-
-    transitions: (states, actions, rewards, next_states, env_embeds)
-    """
     states, actions, rewards, _, env_embeds = transitions
 
     # 转成 torch
@@ -166,8 +146,8 @@ def main():
     # 定义一组任务: (p,q) 组合
     nb_arms = 50
     prob_values = np.linspace(start=0.1, stop=0.9, num=nb_arms)
-    pq_tasks = [(float(p), float(q)) for p, q in zip(prob_values, reversed(prob_values))]
-
+    #pq_tasks = [(float(p), float(q)) for p, q in zip(prob_values, reversed(prob_values))]
+    pq_tasks=[(float(p), float(p)) for p in prob_values]
     # lambda 的最小值和最大值
     lambda_min = 0
     lambda_max = 2.0
@@ -183,8 +163,8 @@ def main():
     gamma = 0.99
 
     # 每个任务采集多少步做adaptation & meta
-    adaptation_steps_per_task = 256
-    meta_steps_per_task = 256
+    adaptation_steps_per_task = 128
+    meta_steps_per_task = 128
 
     # 构建 Meta-Actor (只要一个模型)
     meta_actor = Actor(state_dim).to(device)
@@ -205,7 +185,18 @@ def main():
         for (p_val, q_val) in tasks_batch:
             # 随机抽取一个 lambda
             lam = random.uniform(lambda_min, lambda_max)
-
+            ss = np.random.randint(1, 101)  # 这里假设状态是 [1, 100] 的整数
+            ss=np.array([ss], dtype=np.intc)
+            ss = np.array(ss, dtype=np.float32)
+            ss = torch.from_numpy(ss).to(device).unsqueeze(0)  # 转换为 tensor
+            with torch.no_grad():
+                value = meta_actor(ss, torch.tensor([p_val, q_val, float(OptX)], dtype=torch.float32, device=device).unsqueeze(0))
+            # 确保 value 是一个 Python 数值
+            if isinstance(value, torch.Tensor):
+                value = value.item()
+            # 如果 value 在 lambda 允许的范围内，则替换 lam
+            if lambda_min >value or value> lambda_max:
+                lam = value
             # 构建该任务对应的环境
             env = lineEnv(seed=42, N=N, OptX=OptX, p=p_val, q=q_val)
 
@@ -215,12 +206,12 @@ def main():
 
             # 2) 克隆 meta-params => fast params
             actor_fast = clone_model(meta_actor)
-            fast_actor_optim = optim.SGD(actor_fast.parameters(), lr=inner_lr)
+            fast_actor_optim = optim.Adam(actor_fast.parameters(), lr=inner_lr)
 
             # 3) 收集少量数据(rollout) for adaptation
             adapt_buffer = ReplayBuffer()
             state = env.reset()
-            for _ in range(adaptation_steps_per_task):
+            for hh in range(adaptation_steps_per_task):
                 state_arr = np.array(state, dtype=np.float32)
 
                 # 策略采样动作
@@ -242,19 +233,16 @@ def main():
                 adapt_buffer.push(state_arr, action, reward, next_state, 
                                   env_embed_4d.cpu().numpy())
 
-                state = next_state
+                state = hh%100
+                state=np.array([state],dtype=np.intc)
                 if done:
                     state = env.reset()
 
-            # 若收集数据太少，可以跳过
-            if len(adapt_buffer) < 10:
-                continue
-
-            # 4) 对 fast网络做一次梯度更新 (单步adaptation)
-            adapt_data = adapt_buffer.sample_all()  # 取全部
+            adapt_data = adapt_buffer.sample_all() 
             a_actor_loss = compute_mc_actor_loss(actor_fast, adapt_data, gamma, device)
             fast_actor_optim.zero_grad()
             a_actor_loss.backward()
+            torch.nn.utils.clip_grad_norm(actor_fast.parameters(), 10)
             fast_actor_optim.step()
 
             # 5) 用更新后的 fast网络收集 meta 数据
@@ -292,11 +280,11 @@ def main():
             # (因为 actor_fast 是从 meta_actor clone 出来的，会共享初始参数)
             actor_loss_list.append(m_actor_loss)
 
-        # 7) 外环(meta)参数更新: 将多个任务的损失做平均
         if len(actor_loss_list) > 0:
             meta_actor_loss_val = torch.mean(torch.stack(actor_loss_list))
             meta_actor_optim.zero_grad()
             meta_actor_loss_val.backward()
+            torch.nn.utils.clip_grad_norm(meta_actor.parameters(), 10)
             meta_actor_optim.step()
 
             meta_losses_log.append(meta_actor_loss_val.item())
@@ -319,10 +307,6 @@ def main():
 
     # 保存最终模型参数
     torch.save(meta_actor.state_dict(), "maml_neurwin/meta_actor.pth")
-
-    print("Done. The final meta-params are stored in meta_actor.")
-    print("Plots and models are saved in 'maml_sac' folder.")
-
 
 if __name__ == "__main__":
     main()

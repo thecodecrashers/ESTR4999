@@ -47,6 +47,18 @@ def adapt_single_arm_with_many_lams(meta_actor,
     for outer_iter in range(K_outer):
         # 2.1) 每次循环都构造一个新的 ReplayBuffer
         lam_val=lam_list[outer_iter]
+        ss = np.random.randint(1, 101)  # 这里假设状态是 [1, 100] 的整数
+        ss=np.array([ss], dtype=np.intc)
+        ss = np.array(ss, dtype=np.float32)
+        ss = torch.from_numpy(ss).to(device).unsqueeze(0)  # 转换为 tensor
+        with torch.no_grad():
+            value = meta_actor(ss, torch.tensor([env.p, env.q, float(99)], dtype=torch.float32, device=device).unsqueeze(0))
+            # 确保 value 是一个 Python 数值
+        if isinstance(value, torch.Tensor):
+            value = value.item()
+            # 如果 value 在 lambda 允许的范围内，则替换 lam
+        if 0 >value or value> 2:
+            lam_val = value
         buffer = ReplayBuffer(max_size=num_lams * rollout_steps + 10)  # buffer 大小够用即可
         state = env.reset()
         for _ in range(rollout_steps):
@@ -233,7 +245,7 @@ def main():
     rollout_steps = 200
 
     # 这里就是您想要的多次外层循环次数
-    K_outer = 10
+    K_outer = 1000
 
     arm_actors = []
     arm_critics = []
