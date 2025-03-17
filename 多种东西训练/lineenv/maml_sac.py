@@ -31,8 +31,8 @@ class Actor(nn.Module):
 
     def _init_weights(self, m):
         if isinstance(m, nn.Linear):
-            nn.init.constant_(m.weight, 0.01)  # 权重初始化为0
-            nn.init.constant_(m.bias, 0.01)    # 偏置初始化为0
+            nn.init.constant_(m.weight, -0.01)  # 权重初始化为0
+            nn.init.constant_(m.bias, -0.01)    # 偏置初始化为0
 
     def forward(self, state, env_embed_3d):
         x = torch.cat([state, env_embed_3d], dim=-1)
@@ -67,8 +67,8 @@ class Critic(nn.Module):
 
     def _init_weights(self, m):
         if isinstance(m, nn.Linear):
-            nn.init.constant_(m.weight, 0.01)  # 权重初始化为0
-            nn.init.constant_(m.bias, 0.01)    # 偏置初始化为0
+            nn.init.constant_(m.weight, -0.01)  # 权重初始化为0
+            nn.init.constant_(m.bias, -0.01)    # 偏置初始化为0
 
     def forward(self, state, env_embed_4d):
         x = torch.cat([state, env_embed_4d], dim=-1)  
@@ -183,12 +183,12 @@ def main():
     state_dim = 1
 
     # MAML超参数
-    meta_iterations = 10
+    meta_iterations = 10000
     meta_batch_size = 32
-    inner_lr = 0.001        # 内环学习率
-    meta_lr = 0.001              # 外环学习率
+    inner_lr = 0.0001        # 内环学习率
+    meta_lr = 0.0001              # 外环学习率
     gamma = 0.99
-    alpha = 0
+    alpha = 0.1
 
     # 每个任务采集多少步做adaptation & meta
     adaptation_steps_per_task = 128

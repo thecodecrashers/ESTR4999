@@ -28,8 +28,8 @@ class Actor(nn.Module):
 
     def _init_weights(self, m):
         if isinstance(m, nn.Linear):
-            nn.init.constant_(m.weight, 0.01)
-            nn.init.constant_(m.bias, 0.01)
+            nn.init.constant_(m.weight, -0.01)
+            nn.init.constant_(m.bias, -0.01)
 
     def forward(self, state, env_embed_3d):
         """
@@ -163,13 +163,13 @@ def main():
     lambda_max = 2.0
 
     state_dim = 1
-    meta_iterations = 200
-    meta_batch_size = 4   # a bit smaller for speed
+    meta_iterations = 100
+    meta_batch_size = 16   # a bit smaller for speed
     inner_lr = 0.01
     meta_lr  = 0.01
     gamma = 0.99
 
-    adaptation_steps_per_task = 2   # how many gradient steps to adapt
+    adaptation_steps_per_task    = 3   # how many gradient steps to adapt
     meta_steps_per_task       = 1   # after adaptation, how many times we measure meta-objective
     max_rollout_len = 50     # horizon for each rollout
 

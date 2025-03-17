@@ -64,7 +64,7 @@ def rollout_one_episode(actor, env, lam, gamma, device, max_steps=200):
         return torch.tensor(0.0, device=device)
 
     rewards_t = torch.tensor(rewards, dtype=torch.float32, device=device)
-    log_probs_t = torch.stack(log_probs)
+    log_probs_t = torch.stack(log_probs)  
 
     # Compute discounted returns
     returns_t = torch.zeros(T, dtype=torch.float32, device=device)
@@ -284,7 +284,7 @@ def main():
     N = 100
     OptX = 99
     p_vals = np.linspace(start=0.2, stop=0.8, num=num_arms)
-    q_vals = np.linspace(start=0.8, stop=0.2, num=num_arms)
+    q_vals = p_vals
 
     arms_data = []
     for i in range(num_arms):

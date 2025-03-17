@@ -59,11 +59,11 @@ class Actor(nn.Module):
         return logit
 
 # Training the model
-def train_whittle_network(json_file, num_epochs=50, batch_size=64, learning_rate=0.001, model_save_path="whittle_model.pth"):
+def train_whittle_network(json_file, num_epochs=5000, batch_size=64, learning_rate=0.001, model_save_path="whittle_model.pth"):
     dataset = WhittleDataset(json_file)
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
     
-    model = Actor(state_dim=1+3)  # state + p, q, optx
+    model = Actor(state_dim=1)  # state + p, q, optx
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     criterion = nn.MSELoss()
     

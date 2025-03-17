@@ -100,7 +100,7 @@ if __name__ == "__main__":
     num_arms = 50
     ran_seed = 42
     optx_list = 99
-    prob_values = np.linspace(start=0.1, stop=0.9, num=num_arms)
+    prob_values = np.linspace(start=0.2, stop=0.8, num=num_arms)
     p_list = prob_values
     q_list = p_list
     output_file = "whittle_indices.json"
