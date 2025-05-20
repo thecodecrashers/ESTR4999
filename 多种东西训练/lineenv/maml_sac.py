@@ -31,8 +31,8 @@ class Actor(nn.Module):
 
     def _init_weights(self, m):
         if isinstance(m, nn.Linear):
-            nn.init.constant_(m.weight, -0.01)  # 权重初始化为0
-            nn.init.constant_(m.bias, -0.01)    # 偏置初始化为0
+            nn.init.constant_(m.weight, -0.0001)  # 权重初始化为0
+            nn.init.constant_(m.bias, -0.0001)    # 偏置初始化为0
 
     def forward(self, state, env_embed_3d):
         x = torch.cat([state, env_embed_3d], dim=-1)
@@ -60,15 +60,14 @@ class Critic(nn.Module):
         self.fc5 = nn.Linear(hidden_dim, 2)  # Q(s, a=0) 和 Q(s, a=1)
 
         self.activation = nn.GELU()
-        self.dropout = nn.Dropout(0.1)
 
         # 应用自定义初始化
         self.apply(self._init_weights)
 
     def _init_weights(self, m):
         if isinstance(m, nn.Linear):
-            nn.init.constant_(m.weight, -0.01)  # 权重初始化为0
-            nn.init.constant_(m.bias, -0.01)    # 偏置初始化为0
+            nn.init.constant_(m.weight, -0.0001)  # 权重初始化为0
+            nn.init.constant_(m.bias, -0.0001)    # 偏置初始化为0
 
     def forward(self, state, env_embed_4d):
         x = torch.cat([state, env_embed_4d], dim=-1)  
@@ -77,13 +76,10 @@ class Critic(nn.Module):
         x = self.activation(x)
         x = self.fc2(x)
         x = self.activation(x)
-        x = self.dropout(x)
         x = self.fc3(x)
         x = self.activation(x)
         q_vals = self.fc5(x)  
         return q_vals
-
-
 
 class ReplayBuffer:
     def __init__(self, max_size=100000):
@@ -107,7 +103,6 @@ class ReplayBuffer:
 
 def compute_sac_losses(actor, critic, batch, gamma, alpha, device):
     states, actions, rewards, next_states, env_embeds = batch
-
     # 转成tensor
     states_t = torch.tensor(states, dtype=torch.float32, device=device)
     actions_t = torch.tensor(actions, dtype=torch.long, device=device)
@@ -185,7 +180,7 @@ def main():
     # MAML超参数
     meta_iterations = 10000
     meta_batch_size = 32
-    inner_lr = 0.0001        # 内环学习率
+    inner_lr = 0.00001        # 内环学习率
     meta_lr = 0.0001              # 外环学习率
     gamma = 0.99
     alpha = 0.1
@@ -291,8 +286,8 @@ def main():
             fast_critic_optim.zero_grad()
             a_actor_loss.backward(retain_graph=True)
             a_critic_loss.backward(retain_graph=True)
-            torch.nn.utils.clip_grad_norm_(actor_fast.parameters(), max_norm=10.0)
-            torch.nn.utils.clip_grad_norm_(critic_fast.parameters(), max_norm=10.0)
+            torch.nn.utils.clip_grad_norm_(actor_fast.parameters(), max_norm=1.0)
+            torch.nn.utils.clip_grad_norm_(critic_fast.parameters(), max_norm=1.0)
             fast_actor_optim.step()
             fast_critic_optim.step()
 

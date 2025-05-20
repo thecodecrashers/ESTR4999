@@ -23,19 +23,15 @@ class Actor(nn.Module):
         self.fc2 = nn.Linear(hidden_dim, hidden_dim)
         self.fc3 = nn.Linear(hidden_dim, hidden_dim)
         self.fc5 = nn.Linear(hidden_dim, 1) 
-        self.activation = nn.GELU()
+        self.activation=nn.ReLU()       
+        """self.activation = nn.GELU()
         self.apply(self._init_weights)
 
     def _init_weights(self, m):
         if isinstance(m, nn.Linear):
-            nn.init.constant_(m.weight, -0.01)
-            nn.init.constant_(m.bias, -0.01)
-
+            nn.init.constant_(m.weight, -0.00001)
+            nn.init.constant_(m.bias, -0.00001)"""
     def forward(self, state, env_embed_3d):
-        """
-        state: (batch, state_dim)
-        env_embed_3d: (batch, 3) => (p, q, OptX)
-        """
         x = torch.cat([state, env_embed_3d], dim=-1)
         x = self.activation(self.fc1(x))
         x = self.activation(self.fc2(x))
@@ -157,16 +153,16 @@ def main():
     N = 100
     OptX = 99
     nb_arms = 50
-    prob_values = np.linspace(start=0.1, stop=0.9, num=nb_arms)
+    prob_values = np.linspace(start=0.2, stop=0.8, num=nb_arms)
     pq_tasks = [(float(p), float(p)) for p in prob_values]
     lambda_min = 0.0
     lambda_max = 2.0
 
     state_dim = 1
-    meta_iterations = 100
-    meta_batch_size = 16   # a bit smaller for speed
-    inner_lr = 0.01
-    meta_lr  = 0.01
+    meta_iterations = 10
+    meta_batch_size = 4   # a bit smaller for speed
+    inner_lr = 0.0001
+    meta_lr  = 0.0001
     gamma = 0.99
 
     adaptation_steps_per_task    = 3   # how many gradient steps to adapt
@@ -204,7 +200,7 @@ def main():
                 )
                 adapt_loss = -big_objective  # gradient ascent => negate objective
                 adapt_loss.backward()
-                torch.nn.utils.clip_grad_norm_(actor_fast.parameters(), 10)
+                torch.nn.utils.clip_grad_norm_(actor_fast.parameters(), max_norm=1.0)
                 fast_actor_optim.step()
 
             # 3) Meta-objective: after adaptation, measure performance again
@@ -219,7 +215,7 @@ def main():
             meta_loss_val = torch.mean(torch.stack(actor_loss_list))
             meta_actor_optim.zero_grad()
             meta_loss_val.backward()
-            torch.nn.utils.clip_grad_norm_(meta_actor.parameters(), 10)
+            torch.nn.utils.clip_grad_norm_(meta_actor.parameters(), max_norm=1.0)
             meta_actor_optim.step()
 
             meta_losses_log.append(meta_loss_val.item())

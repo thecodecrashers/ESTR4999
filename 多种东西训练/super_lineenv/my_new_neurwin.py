@@ -8,12 +8,34 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 from lineEnv import lineEnv
-from maml_neurwin import Actor  # We only need the Actor class from your training code
+class Actor(nn.Module):
+    def __init__(self, state_dim):
+        super(Actor, self).__init__()
+        self.input_dim = state_dim + 3
+        hidden_dim = 256
 
-# ----------------------------
-# 1) ROLL-OUT HELPER FUNCTIONS
-# ----------------------------
+        self.fc1 = nn.Linear(self.input_dim, hidden_dim)
+        self.fc2 = nn.Linear(hidden_dim, hidden_dim)
+        self.fc3 = nn.Linear(hidden_dim, hidden_dim)
+        self.fc5 = nn.Linear(hidden_dim, 1)  # single logit
 
+        self.activation = nn.GELU()
+        self.apply(self._init_weights)
+
+    def _init_weights(self, m):
+        if isinstance(m, nn.Linear):
+            nn.init.constant_(m.weight, -0.00001)
+            nn.init.constant_(m.bias, -0.00001)
+
+    def forward(self, state_env):
+        x = self.fc1(state_env)
+        x = self.activation(x)
+        x = self.fc2(x)
+        x = self.activation(x)
+        x = self.fc3(x)
+        x = self.activation(x)
+        logit = self.fc5(x)  
+        return logit
 Temperature = 1.0
 
 def rollout_one_episode(actor, env, lam, gamma, device, max_steps=200):
@@ -24,10 +46,10 @@ def rollout_one_episode(actor, env, lam, gamma, device, max_steps=200):
 
     for step_i in range(max_steps):
         s_t = torch.tensor([env.state], dtype=torch.float32, device=device).unsqueeze(0)
-        logit = actor(
+        logit = actor(torch.cat([
             s_t,
             torch.tensor([env.p, env.q, float(env.OptX)], 
-                         dtype=torch.float32, device=device).unsqueeze(0)
+                         dtype=torch.float32, device=device).unsqueeze(0)],dim=-1)
         )
         adj_logit = (logit - lam) / Temperature
         p1 = torch.sigmoid(adj_logit)          # shape (1,1)
@@ -59,7 +81,6 @@ def rollout_one_episode(actor, env, lam, gamma, device, max_steps=200):
     for t in reversed(range(T)):
         running_return = rewards_t[t] + gamma * running_return
         returns_t[t] = running_return
-
     total_obj = torch.sum(returns_t * log_probs_t)
     return total_obj
 
@@ -80,9 +101,7 @@ def reinforce_loss_over_all_states(actor, env, lam, gamma, device, N, max_steps=
         total_obj += ep_obj
     return total_obj
 
-
 def clone_model(model: nn.Module):
-    """Simple copy of a PyTorch module."""
     import copy
     return copy.deepcopy(model)
 
@@ -104,28 +123,21 @@ def adapt_single_arm(
     N = env.N  # number of states in lineEnv, e.g. 100
 
     for _ in range(K):
-        # Sample lam
         lam = random.uniform(lam_min, lam_max)
-
-        # Optionally compare meta_actor's output with lam
-        # This logic was in your original code, but be sure it's what you want.
         s_int = np.random.randint(1, N + 1)  # pick a random state in [1..N]
         s_tensor = torch.tensor([s_int], dtype=torch.float32, device=device).unsqueeze(0)
         with torch.no_grad():
-            value = meta_actor(
+            value = meta_actor(torch.cat([
                 s_tensor,
                 torch.tensor([env.p, env.q, float(env.OptX)],
-                             dtype=torch.float32, device=device).unsqueeze(0)
+                             dtype=torch.float32, device=device).unsqueeze(0)],dim=-1)
             )
         if isinstance(value, torch.Tensor):
             value = value.item()
-        if (0>= value or value >= 2):
+        if (0 > value or value> 2):
             lam = value  # override lam
-
-        # Do 'adaptation_steps' gradient updates for this lam
         for step_i in range(adaptation_steps):
             fast_actor_optim.zero_grad()
-            # big_objective is sum of REINFORCE returns across all states
             big_objective = reinforce_loss_over_all_states(
                 actor_fast, env, lam, gamma, device, N, max_rollout_len
             )
@@ -134,7 +146,6 @@ def adapt_single_arm(
             fast_actor_optim.step()
 
     return actor_fast
-
 
 def test_multi_arms_top_k(actors_list, envs_list, device,
                           k=3,
@@ -157,7 +168,7 @@ def test_multi_arms_top_k(actors_list, envs_list, device,
             env_embed_3d = torch.tensor([env_i.p, env_i.q, float(env_i.OptX)],
                                         dtype=torch.float32, device=device).unsqueeze(0)
             with torch.no_grad():
-                logit = actors_list[i](s_t, env_embed_3d)
+                logit = actors_list[i](torch.cat([s_t, env_embed_3d],dim=-1))
                 logits.append(logit.item())
 
         # 2) pick top-k arms => action=1, else action=0
@@ -202,7 +213,7 @@ def plot_logits_across_states(actors_list, envs_list, device):
         for state_val in states_range:
             s_t = torch.tensor([state_val], dtype=torch.float32, device=device).unsqueeze(0)
             with torch.no_grad():
-                logit = actor_i(s_t, env_embed_3d).item()
+                logit = actor_i(torch.cat([s_t, env_embed_3d],dim=-1)).item()
                 logits.append(logit)
         
         plt.plot(states_range, logits, label=f"Arm {i} (p={env_i.p:.2f}, q={env_i.q:.2f})")
@@ -211,10 +222,6 @@ def plot_logits_across_states(actors_list, envs_list, device):
     plt.ylabel("Logit")
     plt.title("Logits for Each Environment Across States")
     plt.legend()
-
-    out_dir = "maml_neurwin_lin_out"
-    os.makedirs(out_dir, exist_ok=True)
-    plt.savefig(os.path.join(out_dir, "logits_across_states.png"))
     plt.show()
 
 
@@ -223,7 +230,7 @@ def main():
     print("Using device:", device)
 
     # 1) Load trained meta-Actor from your MAML code
-    meta_actor_path = "maml_neurwin/meta_actor.pth"
+    meta_actor_path = "whittle_model.pth"
     meta_actor = Actor(state_dim=1).to(device)
     meta_actor.load_state_dict(torch.load(meta_actor_path, map_location=device))
     meta_actor.eval()
@@ -243,8 +250,8 @@ def main():
         arms_data.append((p_val, q_val, seed_val))
 
     # 3) Adapt each arm (ENV) from the meta-actor
-    adaptation_steps = 2   # number of gradient steps per lam
-    adapt_inner_lr = 1e-5
+    adaptation_steps = 20   # number of gradient steps per lam
+    adapt_inner_lr = 1e-4
     K = 1  # how many lam draws we do => K * adaptation_steps total updates
 
     arm_actors = []
