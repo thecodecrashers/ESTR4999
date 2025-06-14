@@ -16,42 +16,37 @@ from rc_env import recoveringBanditsEnv  # (ensure rc_env.py is in PYTHONPATH)
 
 
 #尝试一下强制单增来计算结果
-class Actor(nn.Module):
-    def __init__(self, state_dim=1, embed_dim=3, hidden_dim=256):
-        super().__init__()
-        self.state_dim = state_dim
-        self.embed_dim = embed_dim
-        self.input_dim = state_dim + embed_dim
+def fanin_init(size, fanin=None):
+    fanin = fanin or size[0]
+    v = 1. / np.sqrt(fanin)
+    return torch.Tensor(*size).uniform_(-v, v)
 
+class Actor(nn.Module):
+    def __init__(self, state_dim: int, embed_dim: int = 3, hidden_dim: int = 256, out_init_w: float = 3e-3):
+        super().__init__()
+        self.input_dim = state_dim + embed_dim
         self.fc1 = nn.Linear(self.input_dim, hidden_dim)
         self.fc2 = nn.Linear(hidden_dim, hidden_dim)
         self.fc3 = nn.Linear(hidden_dim, hidden_dim)
-        self.fc_out = nn.Linear(hidden_dim, 1)
+        self.fc_out = nn.Linear(hidden_dim, 1)  # λ̂(s) logit
         self.act = nn.ReLU()
-        self._custom_init()
+        self.init_weights(out_init_w)
 
-    def _custom_init(self):
-        # logit = k * state + b, k = (10-1)/(100-1)=0.090909, b=1-0.090909*1 ≈ 0.9091
-        k = (10.0 - 1.0) / (100.0 - 1.0)
-        b = 1.0 - k * 1.0
-
-        # fc1: 只让state部分有权重，env_emb部分为0
-        self.fc1.weight.data.zero_()
-        self.fc1.bias.data.fill_(b)
-        self.fc1.weight.data[:, :self.state_dim] = k
-
-        # 后面所有层和输出层全部置0（只做恒等映射，不引入非线性）
-        self.fc2.weight.data.zero_()
+    def init_weights(self, out_init_w):
+        # 隐层用 fanin_init
+        self.fc1.weight.data = fanin_init(self.fc1.weight.data.size())
+        self.fc2.weight.data = fanin_init(self.fc2.weight.data.size())
+        self.fc3.weight.data = fanin_init(self.fc3.weight.data.size())
+        self.fc1.bias.data.zero_()
         self.fc2.bias.data.zero_()
-        self.fc3.weight.data.zero_()
         self.fc3.bias.data.zero_()
-        self.fc_out.weight.data.zero_()
+        # 输出层权重小区间
+        self.fc_out.weight.data.uniform_(-out_init_w, out_init_w)
         self.fc_out.bias.data.zero_()
 
-    def forward(self, state, env_emb):
-        # state: (B,1), env_emb: (B,embed_dim)
+    def forward(self, state: torch.Tensor, env_emb: torch.Tensor) -> torch.Tensor:
         x = torch.cat([state, env_emb], dim=-1)
-        x = self.act(self.fc1(x))  # max(0, ...)
+        x = self.act(self.fc1(x))
         x = self.act(self.fc2(x))
         x = self.act(self.fc3(x))
         return self.fc_out(x)
@@ -173,9 +168,9 @@ def main():
     ap.add_argument("--save_root", default=None)
 
     # —— RL hyper‑params ——
-    ap.add_argument("--episodes", type=int, default=50)
-    ap.add_argument("--max_steps", type=int, default=50)
-    ap.add_argument("--lr", type=float, default=1e-4)
+    ap.add_argument("--episodes", type=int, default=200)
+    ap.add_argument("--max_steps", type=int, default=500)
+    ap.add_argument("--lr", type=float, default=1e-3)
     ap.add_argument("--gamma", type=float, default=0.99)
     ap.add_argument("--batch_size", type=int, default=32)
     ap.add_argument("--seed", type=int, default=42)
@@ -189,11 +184,11 @@ def main():
     ap.add_argument("--epsilon", type=float, default=0.05)
 
     # —— λ range ——
-    ap.add_argument("--lam_low", type=float, default=-10.0)
+    ap.add_argument("--lam_low", type=float, default=-5.0)
     ap.add_argument("--lam_high", type=float, default=10.0)
 
     # —— temperature (NEW) ——
-    ap.add_argument("--temperature", type=float, default=0.01, help="sigmoid temperature")   # <--- 新增
+    ap.add_argument("--temperature", type=float, default=0.1, help="sigmoid temperature")   # <--- 新增
 
     args = ap.parse_args()
 
