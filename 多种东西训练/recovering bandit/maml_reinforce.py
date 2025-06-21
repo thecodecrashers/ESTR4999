@@ -164,18 +164,18 @@ def main():
     ap.add_argument("--noise_var", type=float, default=0.05)
     ap.add_argument("--max_wait", type=int, default=None)
     # ========= MAML =========
-    ap.add_argument("--meta_iterations", type=int, default=2000)
+    ap.add_argument("--meta_iterations", type=int, default=1000)
     ap.add_argument("--tasks_per_meta_batch", type=int, default=5)
-    ap.add_argument("--adapt_steps", type=int, default=3)
+    ap.add_argument("--adapt_steps", type=int, default=5)
     ap.add_argument("--adapt_lr", type=float, default=1e-4)
     ap.add_argument("--meta_lr", type=float, default=1e-4)
     # ========= RL =========
     ap.add_argument("--gamma", type=float, default=0.99)
     ap.add_argument("--max_steps", type=int, default=50)
-    ap.add_argument("--batch_size", type=int, default=16)
+    ap.add_argument("--batch_size", type=int, default=64)
     ap.add_argument("--epsilon", type=float, default=0.05)
     # ========= λ =========
-    ap.add_argument("--lam_low", type=float, default=0)
+    ap.add_argument("--lam_low", type=float, default=-10)
     ap.add_argument("--lam_high", type=float, default=10.0)
     # ========= 杂项 =========
     ap.add_argument("--seed", type=int, default=42)
